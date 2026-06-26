@@ -1,0 +1,32 @@
+[
+  {
+    "id": "seed-1",
+    "businessName": "Time YSL Electronics",
+    "category": "Electronics",
+    "commune": "Kintambo",
+    "quartier": "Kintambo Magasin",
+    "coords": [-4.310, 15.300],
+    "description": "Small electronics shop selling phones and chargers",
+    "rating": 4.8
+  },
+  {
+    "id": "seed-2",
+    "businessName": "Mama Chantal Restaurant",
+    "category": "Restaurant",
+    "commune": "Limete",
+    "quartier": "Limete-Centre",
+    "coords": [-4.3313, 15.3680],
+    "description": "Local Congolese meals, buka and coffee",
+    "rating": 4.9
+  },
+  {
+    "id": "seed-3",
+    "businessName": "Garage Nzambe",
+    "category": "Auto Repair",
+    "commune": "Masina",
+    "quartier": "Masina-Centre",
+    "coords": [-4.350, 15.380],
+    "description": "Trusted local mechanics and spares",
+    "rating": 4.6
+  }
+]

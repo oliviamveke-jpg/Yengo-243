@@ -1,0 +1,29 @@
+[
+  {
+    "id": "p-1",
+    "vendorId": "seed-1",
+    "name": "Used Smartphone - Infinix Hot",
+    "price": 85000,
+    "currency": "CDF",
+    "category": "Electronics",
+    "description": "Good working condition, charger included"
+  },
+  {
+    "id": "p-2",
+    "vendorId": "seed-2",
+    "name": "Plate of Pondu + Fufu",
+    "price": 3500,
+    "currency": "CDF",
+    "category": "Food",
+    "description": "Home-cooked meal, popular local dish"
+  },
+  {
+    "id": "p-3",
+    "vendorId": "seed-3",
+    "name": "Brake Pads (pair)",
+    "price": 15000,
+    "currency": "CDF",
+    "category": "Auto Parts",
+    "description": "Standard brake pads for small cars"
+  }
+]

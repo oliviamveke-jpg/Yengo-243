@@ -1,0 +1,7 @@
+{
+    "devinCliChat.agenteAtual": "auto",
+    "devinCliChat.skillsSelecionadas": [
+        "skill-creator"
+    ],
+    "devinCliChat.modeloAtual": "codex"
+}
