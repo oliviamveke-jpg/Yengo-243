@@ -384,7 +384,7 @@ a{color:inherit;text-decoration:none}
 .dashboard-section h4{margin:0 0 12px;font-size:1.1rem;font-weight:600;color:#e2e8f0}
 
 /* Overview Metrics */
-.overview-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:16px}
+.overview-metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 @media (max-width:1200px){.overview-metrics{grid-template-columns:repeat(3,1fr)}}
 @media (max-width:768px){.overview-metrics{grid-template-columns:repeat(2,1fr)}}
 @media (max-width:480px){.overview-metrics{grid-template-columns:1fr}}
@@ -417,9 +417,18 @@ a{color:inherit;text-decoration:none}
 .listing-info h4{margin:0 0 8px;color:#e2e8f0;font-size:1rem;font-weight:600}
 .listing-price{margin:0 0 4px;color:#10b981;font-weight:700;font-size:1.1rem}
 .listing-category{margin:0;color:#94a3b8;font-size:0.85rem}
+.listing-business{margin:0 0 4px;color:#3b82f6;font-size:0.85rem;font-weight:600}
+.listing-location{margin:0 0 4px;color:#94a3b8;font-size:0.85rem}
+.listing-rating{margin:0 0 4px;color:#f59e0b;font-size:0.85rem;font-weight:600}
+.listing-status{margin:0 0 4px;font-size:0.85rem;font-weight:600}
+.listing-status.active{color:#10b981}
+.listing-status.inactive{color:#f59e0b}
+.listing-views{margin:0;color:#64748b;font-size:0.8rem}
 .listing-actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
 .btn-danger{background:#ef4444;color:#fff;border:none;padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer;transition:background .2s}
 .btn-danger:hover{background:#dc2626}
+.btn-promote{background:#8b5cf6;color:#fff;border:none;padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer;transition:background .2s}
+.btn-promote:hover{background:#7c3aed}
 
 /* Analytics Metrics */
 .analytics-metrics{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px}
@@ -445,11 +454,17 @@ a{color:inherit;text-decoration:none}
 .vendor-reply{background:#1e3a5f;border:1px solid #3b82f6;border-radius:8px;padding:12px;margin-top:12px}
 .vendor-reply strong{color:#3b82f6;font-size:0.9rem}
 .vendor-reply p{margin:8px 0 0;color:#cbd5e1;font-size:0.9rem}
+.reply-date{color:#64748b;font-size:0.8rem;margin-top:4px;display:block}
+.reply-section{margin-top:12px}
+.reply-form textarea{width:100%;background:#1e293b;border:1px solid #334155;border-radius:8px;padding:12px;color:#e2e8f0;font-family:inherit;font-size:0.9rem;resize:vertical;margin-bottom:8px}
+.reply-actions{display:flex;gap:8px}
 
 /* Subscription Card */
 .subscription-card{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:20px;margin-bottom:20px}
 .subscription-info h4{margin:0 0 8px;color:#e2e8f0;font-size:1.2rem;font-weight:700}
-.subscription-expiry{color:#94a3b8;font-size:0.95rem}
+.subscription-dates{color:#94a3b8;font-size:0.95rem}
+.subscription-dates span{color:#cbd5e1}
+.subscription-remaining{color:#10b981;font-weight:600;font-size:0.95rem;margin-top:4px}
 .subscription-actions{display:flex;gap:12px;margin-top:16px}
 .plan-features{background:#0f172a;border:1px solid #334155;border-radius:12px;padding:20px}
 .plan-features h4{margin:0 0 12px;color:#e2e8f0;font-size:1.1rem;font-weight:700}
@@ -477,3 +492,20 @@ a{color:inherit;text-decoration:none}
 /* Empty State */
 .empty-state{padding:40px;border:2px dashed #334155;border-radius:12px;text-align:center;color:#64748b}
 .empty-state p{margin:0;font-size:1rem}
+
+/* Marker Tooltip */
+.yengo-marker-tooltip {
+  background: #1e293b;
+  border: 1px solid #3b82f6;
+  border-radius: 8px;
+  color: #e2e8f0;
+  font-size: 14px;
+  font-weight: 600;
+  padding: 8px 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  white-space: nowrap;
+}
+
+.yengo-marker-tooltip::before {
+  border-top-color: #3b82f6;
+}

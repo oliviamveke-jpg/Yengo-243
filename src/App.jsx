@@ -453,10 +453,10 @@ console.log('Filters:', filters)
 console.log('Filtered vendors:', filteredVendors)
 
   useEffect(() => {
-    if (selectedVendorId && !vendors.some(v => v.id === selectedVendorId)) {
-      setSelectedVendorId(vendors[0]?.id || null)
+    if (selectedVendorId && !filteredVendors.some(v => v.id === selectedVendorId)) {
+      setSelectedVendorId(filteredVendors[0]?.id || null)
     }
-  }, [selectedVendorId, vendors])
+  }, [selectedVendorId, filteredVendors])
 
   const selectedVendor = useMemo(() => vendors.find(v => v.id === selectedVendorId) || vendors[0] || null, [vendors, selectedVendorId])
 
@@ -733,10 +733,22 @@ console.log('Filtered vendors:', filteredVendors)
   }
 
   const handleLogout = () => {
+    // Clear authentication state
     setCurrentUser(null)
+    
+    // Clear all authentication-related localStorage items
     localStorage.removeItem(STORAGE_KEYS.currentUser)
     localStorage.removeItem('currentUser')
+    localStorage.removeItem(STORAGE_KEYS.sessions)
+    
+    // Clear sessionStorage completely
     sessionStorage.clear()
+    
+    // Reset view mode to marketplace
+    setViewMode('marketplace')
+    
+    // Close any open panels
+    setShowAuthPanel(false)
   }
 
   const handleRegister = () => {
@@ -840,6 +852,7 @@ console.log('Filtered vendors:', filteredVendors)
                 <VendorDashboard
                   currentUser={currentUser}
                   vendors={vendors}
+                  setVendors={setVendors}
                   orders={orders}
                   reviews={reviews}
                   cart={cart}
@@ -860,10 +873,9 @@ console.log('Filtered vendors:', filteredVendors)
         <main className="app-main">
           <section className="map-panel">
             <MapView
-              vendors={vendors}
+              vendors={filteredVendors}
               selectedVendorId={selectedVendor?.id}
               onVendorSelect={vendorId => handleVendorSelection(vendorId, false)}
-              onNearestVendorClick={vendorId => handleVendorSelection(vendorId, true)}
               markersVisible={markersVisible}
               targetCoordinate={targetCoordinate}
               targetZoom={targetZoom}
@@ -872,7 +884,7 @@ console.log('Filtered vendors:', filteredVendors)
 
           <aside className="market-panel">
             <Marketplace
-              vendors={vendors}
+              vendors={filteredVendors}
               currentUser={currentUser}
               filters={filters}
               onFiltersChange={setFilters}

@@ -1,22 +1,6 @@
 import React, { useEffect, useRef } from 'react'
 import L from 'leaflet'
 
-function haversineDistance([lat1, lng1], [lat2, lng2]) {
-  const toRad = deg => (deg * Math.PI) / 180
-  const R = 6371000
-
-  const dLat = toRad(lat2 - lat1)
-  const dLng = toRad(lng2 - lng1)
-
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLng / 2) ** 2
-
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
 const categoryColors = {
   Électronique: '#10b981',
   Vêtements: '#3b82f6',
@@ -34,7 +18,6 @@ export default function MapView({
   vendors = [],
   selectedVendorId,
   onVendorSelect,
-  onNearestVendorClick,
   markersVisible = true,
   mapStyle = 'light',
   targetCoordinate = null,
@@ -43,6 +26,9 @@ export default function MapView({
   const mapRef = useRef(null)
   const markersRef = useRef(null)
   const vendorsRef = useRef([])
+  const clickTimeoutRef = useRef(null)
+  const lastClickedVendorRef = useRef(null)
+  const tooltipRef = useRef(null)
 
   useEffect(() => {
     vendorsRef.current = vendors
@@ -52,7 +38,8 @@ export default function MapView({
     if (mapRef.current) return
 
     const map = L.map('react-map', {
-      zoomControl: true
+      zoomControl: true,
+      doubleClickZoom: false
     }).setView([-4.325, 15.3222], 12)
 
     mapRef.current = map
@@ -73,30 +60,6 @@ export default function MapView({
 
     markersRef.current = L.layerGroup().addTo(map)
 
-    map.on('click', e => {
-      const currentVendors = vendorsRef.current
-
-      if (!currentVendors.length) return
-
-      let nearest = null
-
-      currentVendors.forEach(vendor => {
-        if (!vendor.coords) return
-
-        const distance = haversineDistance(
-          [e.latlng.lat, e.latlng.lng],
-          vendor.coords
-        )
-
-        if (!nearest || distance < nearest.distance) {
-          nearest = { vendor, distance }
-        }
-      })
-
-      if (nearest && nearest.distance < 3000) {
-        onNearestVendorClick?.(nearest.vendor.id)
-      }
-    })
 
     const locateControl = L.control({ position: 'topleft' })
 
@@ -129,6 +92,12 @@ export default function MapView({
     setTimeout(() => map.invalidateSize(), 200)
 
     return () => {
+      if (clickTimeoutRef.current) {
+        clearTimeout(clickTimeoutRef.current)
+      }
+      if (tooltipRef.current) {
+        map.removeLayer(tooltipRef.current)
+      }
       map.remove()
       mapRef.current = null
     }
@@ -196,24 +165,66 @@ export default function MapView({
 
       const marker = L.marker(coords, { icon })
 
-      marker.bindPopup(`
-        <strong>${vendor.name}</strong>
-        <br />
-        ${vendor.category}
-      `)
+      marker.on('mouseover', () => {
+        if (tooltipRef.current) {
+          map.removeLayer(tooltipRef.current)
+        }
+        
+        const tooltip = L.tooltip({
+          permanent: false,
+          direction: 'top',
+          offset: [0, -15],
+          className: 'yengo-marker-tooltip'
+        }).setContent(vendor.name)
+        
+        marker.bindTooltip(tooltip).openTooltip()
+        tooltipRef.current = tooltip
+      })
 
-      marker.on('click', () => {
-        onVendorSelect?.(vendor.id)
+      marker.on('mouseout', () => {
+        if (tooltipRef.current) {
+          map.removeLayer(tooltipRef.current)
+          tooltipRef.current = null
+        }
+        marker.closeTooltip()
+      })
+
+      marker.on('click', (e) => {
+        L.DomEvent.stopPropagation(e)
+        
+        if (clickTimeoutRef.current) {
+          clearTimeout(clickTimeoutRef.current)
+          clickTimeoutRef.current = null
+          
+          if (lastClickedVendorRef.current === vendor.id) {
+            onVendorSelect?.(vendor.id)
+          }
+          lastClickedVendorRef.current = null
+        } else {
+          lastClickedVendorRef.current = vendor.id
+          clickTimeoutRef.current = setTimeout(() => {
+            clickTimeoutRef.current = null
+            lastClickedVendorRef.current = null
+            
+            if (mapRef.current && vendor.coords) {
+              mapRef.current.flyTo(vendor.coords, 17, {
+                animate: true,
+                duration: 1.5
+              })
+            }
+          }, 300)
+        }
       })
 
       marker.addTo(layer)
-
-      if (isSelected) {
-        marker.openPopup()
-      }
     })
 
     map.invalidateSize()
+
+    if (vendors.length > 0) {
+      const bounds = L.latLngBounds(vendors.map(v => v.coords || [-4.325, 15.3222]))
+      map.fitBounds(bounds, { padding: [50, 50], maxZoom: 17 })
+    }
   }, [
     vendors,
     selectedVendorId,
@@ -221,20 +232,6 @@ export default function MapView({
     onVendorSelect
   ])
 
-  useEffect(() => {
-    if (!selectedVendorId || !mapRef.current) return
-
-    const vendor = vendors.find(
-      v => v.id === selectedVendorId
-    )
-
-    if (!vendor?.coords) return
-
-    mapRef.current.flyTo(vendor.coords, 15, {
-      animate: true,
-      duration: 1.5
-    })
-  }, [selectedVendorId, vendors])
 
   useEffect(() => {
     if (!targetCoordinate || !mapRef.current) return
@@ -246,7 +243,25 @@ export default function MapView({
   }, [targetCoordinate, targetZoom])
 
   return (
-    <div className="map-card">
+    <div className="map-card" style={{ position: 'relative', width: '100%', height: '100%' }}>
+      {vendors.length === 0 && (
+        <div style={{
+          position: 'absolute',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          backgroundColor: 'white',
+          padding: '20px 30px',
+          borderRadius: '8px',
+          boxShadow: '0 2px 10px rgba(0,0,0,0.1)',
+          zIndex: 1000,
+          textAlign: 'center'
+        }}>
+          <p style={{ margin: 0, fontSize: '16px', color: '#374151' }}>
+            No businesses found in this area.
+          </p>
+        </div>
+      )}
       <div
         id="react-map"
         className="map-canvas"
