@@ -1,5 +1,6 @@
 import React from 'react'
 
+<<<<<<< HEAD
 export default function Toggle({ label, checked, onChange, disabled = false }) {
   return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -37,6 +38,23 @@ export default function Toggle({ label, checked, onChange, disabled = false }) {
             boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
           }}
         />
+=======
+/**
+ * Toggle — Design system toggle switch component
+ */
+export default function Toggle({ label, checked, onChange, disabled = false }) {
+  return (
+    <div className="toggle-row">
+      {label && <span className="toggle-label">{label}</span>}
+      <button
+        type="button"
+        className={`toggle-switch${checked ? ' toggle-on' : ''}`}
+        onClick={() => !disabled && onChange(!checked)}
+        disabled={disabled}
+        aria-pressed={checked}
+      >
+        <span className="toggle-knob" />
+>>>>>>> e66c1ea (Update app)
       </button>
     </div>
   )

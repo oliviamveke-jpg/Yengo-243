@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Modal from '../ui/Modal'
 import Input from '../ui/Input'
+<<<<<<< HEAD
 import Textarea from '../ui/Textarea'
 import Select from '../ui/Select'
 import Button from '../ui/Button'
@@ -69,10 +70,32 @@ export default function ProfileEditModal({ isOpen, onClose, vendor, currentUser,
     twitter: ''
   })
 
+=======
+import Button from '../ui/Button'
+import { listingService } from '../../services/listingService'
+import { userService } from '../../services/userService'
+import { useTranslation } from '../../i18n/I18nProvider'
+
+export default function ProfileEditModal({ isOpen, onClose, vendor, currentUser, onProfileUpdate }) {
+  const { t } = useTranslation()
+  const [formData, setFormData] = useState({
+    businessName: '',
+    category: '',
+    description: '',
+    province: '',
+    commune: '',
+    quartier: '',
+    street: '',
+    email: '',
+    phone: '',
+    website: ''
+  })
+>>>>>>> e66c1ea (Update app)
   const [errors, setErrors] = useState({})
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   useEffect(() => {
+<<<<<<< HEAD
     if (vendor && isOpen) {
       setFormData({
         fullName: currentUser?.fullName || '',
@@ -93,11 +116,31 @@ export default function ProfileEditModal({ isOpen, onClose, vendor, currentUser,
       setErrors({})
     }
   }, [vendor, currentUser, isOpen])
+=======
+    if (vendor) {
+      setFormData({
+        businessName: vendor.name || '',
+        category: vendor.category || '',
+        description: vendor.description || '',
+        province: vendor.province || '',
+        commune: vendor.commune || '',
+        quartier: vendor.quartier || '',
+        street: vendor.rue || vendor.street || '',
+        email: vendor.email || currentUser?.email || '',
+        phone: vendor.phone || vendor.phoneNumber || currentUser?.phoneNumber || '',
+        website: vendor.website || ''
+      })
+    }
+  }, [vendor, currentUser])
+>>>>>>> e66c1ea (Update app)
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+<<<<<<< HEAD
     // Clear error for this field when user starts typing
+=======
+>>>>>>> e66c1ea (Update app)
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
@@ -105,6 +148,7 @@ export default function ProfileEditModal({ isOpen, onClose, vendor, currentUser,
 
   const validate = () => {
     const newErrors = {}
+<<<<<<< HEAD
 
     if (!validateRequired(formData.fullName)) {
       newErrors.fullName = 'Full name is required'
@@ -150,12 +194,18 @@ export default function ProfileEditModal({ isOpen, onClose, vendor, currentUser,
       newErrors.twitter = 'Please enter a valid URL'
     }
 
+=======
+    if (!formData.businessName.trim()) newErrors.businessName = t('profileEdit.businessName')
+    if (!formData.category.trim()) newErrors.category = t('profileEdit.category')
+    if (!formData.description.trim()) newErrors.description = t('profileEdit.businessDescription')
+>>>>>>> e66c1ea (Update app)
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+<<<<<<< HEAD
     
     if (!validate()) {
       return
@@ -219,12 +269,49 @@ export default function ProfileEditModal({ isOpen, onClose, vendor, currentUser,
     } catch (error) {
       console.error('Error saving profile:', error)
       alert('Failed to save profile. Please try again.')
+=======
+    if (!validate()) return
+    setIsSubmitting(true)
+    try {
+      const vendorId = vendor?.id || vendor?.vendorId || currentUser?.id
+
+      const updatedVendor = listingService.updateVendor(vendorId, {
+        name: formData.businessName,
+        category: formData.category,
+        description: formData.description,
+        province: formData.province,
+        commune: formData.commune,
+        quartier: formData.quartier,
+        rue: formData.street,
+        email: formData.email,
+        phone: formData.phone,
+        phoneNumber: formData.phone,
+        website: formData.website
+      })
+
+      let updatedUser = null
+      if (currentUser && formData.email !== currentUser.email) {
+        updatedUser = userService.updateUser(currentUser.id, { email: formData.email })
+      }
+
+      if (onProfileUpdate) {
+        onProfileUpdate(
+          listingService.getVendor(vendorId) || updatedVendor,
+          updatedUser || currentUser
+        )
+      }
+
+      onClose()
+    } catch (error) {
+      console.error('Error updating profile:', error)
+>>>>>>> e66c1ea (Update app)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   return (
+<<<<<<< HEAD
     <Modal isOpen={isOpen} onClose={onClose} title="Edit Profile" size="large">
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '16px' }}>
@@ -358,6 +445,42 @@ export default function ProfileEditModal({ isOpen, onClose, vendor, currentUser,
           <Button type="submit" variant="primary" disabled={isSubmitting}>
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </Button>
+=======
+    <Modal isOpen={isOpen} onClose={onClose} title={t('profileEdit.title')} size="large">
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <Input label={t('profileEdit.businessName')} name="businessName" value={formData.businessName} onChange={handleChange} error={errors.businessName} required />
+          <Input label={t('profileEdit.category')} name="category" value={formData.category} onChange={handleChange} error={errors.category} required />
+        </div>
+        <div style={{ marginTop: 8 }}>
+          <label style={{ display: 'block', fontSize: '0.8rem', fontWeight: 600, marginBottom: 4 }}>{t('profileEdit.businessDescription')}</label>
+          <textarea
+            name="description"
+            value={formData.description}
+            onChange={handleChange}
+            rows={3}
+            style={{
+              width: '100%', padding: '8px 12px', borderRadius: 8, border: errors.description ? '1px solid #ef4444' : '1px solid var(--border)',
+              background: 'var(--surface)', color: 'var(--text)', fontSize: '0.9rem', resize: 'vertical', fontFamily: 'inherit', boxSizing: 'border-box'
+            }}
+          />
+          {errors.description && <span style={{ color: '#ef4444', fontSize: '0.75rem' }}>{errors.description}</span>}
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12, marginTop: 8 }}>
+          <Input label={t('profileEdit.province')} name="province" value={formData.province} onChange={handleChange} />
+          <Input label={t('profileEdit.commune')} name="commune" value={formData.commune} onChange={handleChange} />
+          <Input label={t('profileEdit.quartier')} name="quartier" value={formData.quartier} onChange={handleChange} />
+        </div>
+        <Input label={t('profileEdit.street')} name="street" value={formData.street} onChange={handleChange} />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginTop: 8 }}>
+          <Input label={t('profileEdit.email')} name="email" type="email" value={formData.email} onChange={handleChange} />
+          <Input label={t('profileEdit.phone')} name="phone" type="tel" value={formData.phone} onChange={handleChange} />
+        </div>
+        <Input label={t('profileEdit.website')} name="website" type="url" value={formData.website} onChange={handleChange} placeholder={t('addListing.website')} />
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 12 }}>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>{t('profileEdit.cancel')}</Button>
+          <Button type="submit" variant="primary" disabled={isSubmitting}>{isSubmitting ? t('profileEdit.saving') : t('profileEdit.save')}</Button>
+>>>>>>> e66c1ea (Update app)
         </div>
       </form>
     </Modal>

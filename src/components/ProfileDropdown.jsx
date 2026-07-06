@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useState, useRef, useEffect } from 'react';
 
 /**
@@ -28,11 +29,48 @@ export default function ProfileDropdown({ user, onLogout, onNavigate, viewMode, 
   // Helper to get initials from name
   const getInitials = (name) => {
     if (!name) return '?';
+=======
+import React, { useState, useRef, useEffect } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import {
+  LayoutDashboard, Store, Package, BarChart3, User, Heart, ShoppingBag,
+  Settings, MapPin, Star, Bell, HelpCircle, LogOut
+} from 'lucide-react'
+import { useTranslation } from '../i18n/I18nProvider'
+
+/**
+ * ProfileDropdown — Role-based dynamic menu items.
+ *
+ * BUYER menu:  My Profile, Account Settings, Favorites, Orders, Saved Addresses,
+ *              My Reviews, Notifications, Help, Logout
+ * VENDOR menu: Dashboard, My Store, Products, Analytics, Profile, Settings,
+ *              Notifications, Help (opener), Logout
+ * ADMIN menu:  Dashboard + Logout (admin uses the admin-specific flow)
+ */
+export default function ProfileDropdown({ user, onLogout, onNavigate, viewMode, setViewMode, onOpenProfile }) {
+  const { t } = useTranslation()
+  const [isOpen, setIsOpen] = useState(false)
+  const dropdownRef = useRef(null)
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const getInitials = (name) => {
+    if (!name) return '?'
+>>>>>>> e66c1ea (Update app)
     return name
       .split(' ')
       .map(n => n[0])
       .join('')
       .toUpperCase()
+<<<<<<< HEAD
       .substring(0, 2);
   };
 
@@ -52,6 +90,100 @@ export default function ProfileDropdown({ user, onLogout, onNavigate, viewMode, 
 
   const avatarImage = user?.profilePicture || null;
   const initials = getInitials(user?.fullName);
+=======
+      .substring(0, 2)
+  }
+
+  const role = user?.role || 'buyer'
+
+  /**
+   * Menu item descriptors: { id, icon, labelKey, action }
+   * The `action` callback is called with { user, onNavigate, viewMode, setViewMode }
+   * so the dropdown doesn't need to know about the broader app.
+   */
+  const buyerMenuItems = [
+    { id: 'profile',         icon: User,       labelKey: 'user.myProfile' },
+    { id: 'accountSettings', icon: Settings,    labelKey: 'user.accountSettings' },
+    { id: 'favorites',       icon: Heart,       labelKey: 'user.favorites' },
+    { id: 'orders',          icon: ShoppingBag, labelKey: 'user.orders' },
+    { id: 'savedAddresses',  icon: MapPin,      labelKey: 'user.savedAddresses' },
+    { id: 'myReviews',       icon: Star,        labelKey: 'user.myReviews' },
+    { id: 'notifications',   icon: Bell,        labelKey: 'user.notifications' },
+    { id: 'help',            icon: HelpCircle,  labelKey: 'user.help' },
+  ]
+
+  const vendorMenuItems = [
+    { id: 'dashboard',       icon: LayoutDashboard, labelKey: 'user.dashboard' },
+    { id: 'myStore',         icon: Store,           labelKey: 'user.myStore' },
+    { id: 'products',        icon: Package,         labelKey: 'user.products' },
+    { id: 'analytics',       icon: BarChart3,       labelKey: 'user.analytics' },
+    { id: 'profile',         icon: User,            labelKey: 'user.myProfile' },
+    { id: 'settings',        icon: Settings,        labelKey: 'user.accountSettings' },
+    { id: 'notifications',   icon: Bell,            labelKey: 'user.notifications' },
+    { id: 'help',            icon: HelpCircle,      labelKey: 'user.help' },
+  ]
+
+  const adminMenuItems = [
+    { id: 'dashboard',       icon: LayoutDashboard, labelKey: 'user.dashboard' },
+    { id: 'notifications',   icon: Bell,            labelKey: 'user.notifications' },
+  ]
+
+  let currentMenu
+  if (role === 'vendor') {
+    currentMenu = vendorMenuItems
+  } else if (role === 'admin') {
+    currentMenu = adminMenuItems
+  } else {
+    // buyer (default)
+    currentMenu = buyerMenuItems
+  }
+
+  const handleItemClick = (itemId) => {
+    setIsOpen(false)
+
+    // Map menu item ids to app-level actions
+    switch (itemId) {
+      case 'profile':
+        if (onOpenProfile) {
+          onOpenProfile()
+        }
+        break
+      case 'settings':
+      case 'accountSettings':
+        setViewMode('settingsPage')
+        break
+      case 'dashboard':
+      case 'myStore':
+      case 'products':
+      case 'analytics':
+        setViewMode('dashboard')
+        break
+      // Buyer-only items that don't have a full view yet can be surfaced
+      // as future modals — for now they just close the menu.
+      case 'favorites':
+        // Only navigate if role is buyer (not vendor/admin)
+        if (role === 'buyer') {
+          setViewMode('favoritesPage')
+        }
+        break
+      case 'orders':
+      case 'savedAddresses':
+      case 'myReviews':
+      case 'notifications':
+      case 'help':
+        // Placeholder: close menu. In future these could open modals.
+        break
+      case 'logout':
+        onLogout()
+        break
+      default:
+        break
+    }
+  }
+
+  const avatarImage = user?.profilePicture || null
+  const initials = getInitials(user?.fullName)
+>>>>>>> e66c1ea (Update app)
 
   return (
     <div className="profile-dropdown-container" ref={dropdownRef}>
@@ -60,7 +192,11 @@ export default function ProfileDropdown({ user, onLogout, onNavigate, viewMode, 
         onClick={() => setIsOpen(!isOpen)}
         aria-haspopup="true"
         aria-expanded={isOpen}
+<<<<<<< HEAD
         aria-label="User profile menu"
+=======
+        aria-label={t('user.dashboard')}
+>>>>>>> e66c1ea (Update app)
       >
         {avatarImage ? (
           <img src={avatarImage} alt={user?.fullName} className="profile-avatar-img" />
@@ -69,6 +205,7 @@ export default function ProfileDropdown({ user, onLogout, onNavigate, viewMode, 
         )}
       </button>
 
+<<<<<<< HEAD
       {isOpen && (
         <div className="profile-dropdown-menu">
           <div className="dropdown-header">
@@ -89,4 +226,46 @@ export default function ProfileDropdown({ user, onLogout, onNavigate, viewMode, 
       )}
     </div>
   );
+=======
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            className="profile-dropdown-menu"
+            initial={{ opacity: 0, y: -8, scale: 0.96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -8, scale: 0.96 }}
+            transition={{ duration: 0.15, ease: 'easeOut' }}
+          >
+            <div className="dropdown-header">
+              <p className="dropdown-user-name">{user?.fullName}</p>
+              <p className="dropdown-user-role">{role.toUpperCase()}</p>
+            </div>
+            <div className="dropdown-divider"></div>
+            <ul className="dropdown-list" role="menu">
+              {currentMenu.map((item) => {
+                const Icon = item.icon
+                return (
+                  <li
+                    key={item.id}
+                    className="dropdown-item"
+                    role="menuitem"
+                    onClick={() => handleItemClick(item.id)}
+                  >
+                    <Icon size={16} />
+                    {t(item.labelKey)}
+                  </li>
+                )
+              })}
+              <div className="dropdown-divider"></div>
+              <li className="dropdown-item logout" role="menuitem" onClick={() => handleItemClick('logout')}>
+                <LogOut size={16} />
+                {t('user.logout')}
+              </li>
+            </ul>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+>>>>>>> e66c1ea (Update app)
 }

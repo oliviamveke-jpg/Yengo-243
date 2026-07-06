@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
+<<<<<<< HEAD
 import { vendorStorage } from '../../utils/storage'
 
 const LANGUAGE_OPTIONS = [
@@ -50,10 +51,35 @@ export default function LanguageModal({ isOpen, onClose, vendor, onLanguageChang
   }
 
   const handleClose = () => {
+=======
+import { useTranslation } from '../../i18n/I18nProvider'
+
+const LANGUAGE_OPTIONS = [
+  { value: 'en', labelKey: 'language.english', flag: '🇬🇧' },
+  { value: 'fr', labelKey: 'language.french', flag: '🇫🇷' },
+  { value: 'ln', labelKey: 'language.lingala', flag: '🇨🇩' },
+  { value: 'sw', labelKey: 'language.swahili', flag: '🇨🇩' },
+  { value: 'tsh', labelKey: 'language.tshiluba', flag: '🇨🇩' }
+]
+
+export default function LanguageModal({ isOpen, onClose, vendor, onLanguageChanged }) {
+  const { locale, setLocale, t } = useTranslation()
+  const [selectedLanguage, setSelectedLanguage] = useState(locale)
+
+  useEffect(() => {
+    if (isOpen) setSelectedLanguage(locale)
+  }, [isOpen, locale])
+
+  const handleSubmit = (e) => {
+    e.preventDefault()
+    setLocale(selectedLanguage)
+    onLanguageChanged(selectedLanguage)
+>>>>>>> e66c1ea (Update app)
     onClose()
   }
 
   return (
+<<<<<<< HEAD
     <Modal isOpen={isOpen} onClose={handleClose} title="Language Preference" size="medium">
       <form onSubmit={handleSubmit}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -98,6 +124,31 @@ export default function LanguageModal({ isOpen, onClose, vendor, onLanguageChang
           <Button type="submit" variant="primary" disabled={isSubmitting}>
             {isSubmitting ? 'Applying...' : 'Apply Language'}
           </Button>
+=======
+    <Modal isOpen={isOpen} onClose={onClose} title={t('language.title')} size="medium">
+      <form onSubmit={handleSubmit}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {LANGUAGE_OPTIONS.map(option => (
+            <div
+              key={option.value}
+              onClick={() => setSelectedLanguage(option.value)}
+              className="dashboard-card-surface"
+              style={{
+                display: 'flex', alignItems: 'center', gap: 16, cursor: 'pointer',
+                border: selectedLanguage === option.value ? '2px solid var(--primary)' : '1px solid var(--border)',
+                background: selectedLanguage === option.value ? 'var(--bg)' : 'var(--surface)',
+                transition: 'all 150ms ease'
+              }}
+            >
+              <span style={{ fontSize: '2rem' }}>{option.flag}</span>
+              <h4 style={{ margin: 0, color: 'var(--text)' }}>{t(option.labelKey)}</h4>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 24 }}>
+          <Button type="button" variant="secondary" onClick={onClose}>{t('language.cancel')}</Button>
+          <Button type="submit" variant="primary">{t('language.apply')}</Button>
+>>>>>>> e66c1ea (Update app)
         </div>
       </form>
     </Modal>

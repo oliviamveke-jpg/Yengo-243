@@ -3,6 +3,7 @@ import Modal from '../ui/Modal'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import { validatePhone, validateRequired } from '../../utils/validation'
+<<<<<<< HEAD
 
 export default function ChangePhoneModal({ isOpen, onClose, currentUser, onPhoneChanged }) {
   const [formData, setFormData] = useState({
@@ -14,17 +15,33 @@ export default function ChangePhoneModal({ isOpen, onClose, currentUser, onPhone
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showOtp, setShowOtp] = useState(false)
   const [generatedOtp, setGeneratedOtp] = useState('')
+=======
+import { userService } from '../../services/userService'
+import { useTranslation } from '../../i18n/I18nProvider'
+
+export default function ChangePhoneModal({ isOpen, onClose, currentUser, onPhoneChanged }) {
+  const { t } = useTranslation()
+  const [formData, setFormData] = useState({ currentPhone: '', newPhone: '', otp: '' })
+  const [errors, setErrors] = useState({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [showOtp, setShowOtp] = useState(false)
+>>>>>>> e66c1ea (Update app)
 
   const handleChange = (e) => {
     const { name, value } = e.target
     setFormData(prev => ({ ...prev, [name]: value }))
+<<<<<<< HEAD
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: '' }))
     }
+=======
+    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }))
+>>>>>>> e66c1ea (Update app)
   }
 
   const validate = () => {
     const newErrors = {}
+<<<<<<< HEAD
 
     if (!validateRequired(formData.currentPhone)) {
       newErrors.currentPhone = 'Current phone number is required'
@@ -38,12 +55,19 @@ export default function ChangePhoneModal({ isOpen, onClose, currentUser, onPhone
       newErrors.newPhone = 'New phone number must be different from current'
     }
 
+=======
+    if (!validateRequired(formData.currentPhone)) newErrors.currentPhone = t('changePhone.currentRequired')
+    else if (formData.currentPhone !== currentUser.phone) newErrors.currentPhone = t('changePhone.currentMismatch')
+    if (!validatePhone(formData.newPhone)) newErrors.newPhone = t('changePhone.newInvalid')
+    else if (formData.newPhone === currentUser.phone) newErrors.newPhone = t('changePhone.mustBeDifferent')
+>>>>>>> e66c1ea (Update app)
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSendOtp = async (e) => {
     e.preventDefault()
+<<<<<<< HEAD
 
     if (!validate()) return
 
@@ -59,6 +83,15 @@ export default function ChangePhoneModal({ isOpen, onClose, currentUser, onPhone
     } catch (error) {
       console.error('Error sending OTP:', error)
       alert('Failed to send OTP. Please try again.')
+=======
+    if (!validate()) return
+    setIsSubmitting(true)
+    try {
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      setShowOtp(true)
+    } catch (error) {
+      // Error handled silently
+>>>>>>> e66c1ea (Update app)
     } finally {
       setIsSubmitting(false)
     }
@@ -66,6 +99,7 @@ export default function ChangePhoneModal({ isOpen, onClose, currentUser, onPhone
 
   const handleVerifyAndChange = async (e) => {
     e.preventDefault()
+<<<<<<< HEAD
 
     if (formData.otp !== generatedOtp) {
       setErrors({ otp: 'Invalid OTP' })
@@ -97,11 +131,22 @@ export default function ChangePhoneModal({ isOpen, onClose, currentUser, onPhone
     } catch (error) {
       console.error('Error changing phone:', error)
       alert('Failed to change phone number. Please try again.')
+=======
+    setIsSubmitting(true)
+    try {
+      const updatedUser = userService.updateUser(currentUser.id, { phone: formData.newPhone }) || { ...currentUser, phone: formData.newPhone }
+      if (!updatedUser) throw new Error('User not found')
+      onPhoneChanged(updatedUser)
+      onClose()
+    } catch (error) {
+      // Error handled silently
+>>>>>>> e66c1ea (Update app)
     } finally {
       setIsSubmitting(false)
     }
   }
 
+<<<<<<< HEAD
   const handleClose = () => {
     setFormData({ currentPhone: '', newPhone: '', otp: '' })
     setErrors({})
@@ -142,10 +187,22 @@ export default function ChangePhoneModal({ isOpen, onClose, currentUser, onPhone
             <Button type="submit" variant="primary" disabled={isSubmitting}>
               {isSubmitting ? 'Sending...' : 'Send OTP'}
             </Button>
+=======
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={t('changePhone.title')} size="medium">
+      {!showOtp ? (
+        <form onSubmit={handleSendOtp}>
+          <Input label={t('changePhone.current')} name="currentPhone" type="tel" value={formData.currentPhone} onChange={handleChange} error={errors.currentPhone} required placeholder={currentUser.phone} />
+          <Input label={t('changePhone.new')} name="newPhone" type="tel" value={formData.newPhone} onChange={handleChange} error={errors.newPhone} required placeholder="+243 81 234 5678" />
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+            <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>{t('changePhone.cancel')}</Button>
+            <Button type="submit" variant="primary" disabled={isSubmitting}>{isSubmitting ? t('changePhone.sending') : t('changePhone.sendOtp')}</Button>
+>>>>>>> e66c1ea (Update app)
           </div>
         </form>
       ) : (
         <form onSubmit={handleVerifyAndChange}>
+<<<<<<< HEAD
           <div style={{ backgroundColor: '#0f172a', padding: '16px', borderRadius: '8px', marginBottom: '20px' }}>
             <p style={{ color: '#94a3b8', marginBottom: '8px' }}>
               OTP has been sent to:
@@ -172,6 +229,16 @@ export default function ChangePhoneModal({ isOpen, onClose, currentUser, onPhone
             <Button type="submit" variant="primary" disabled={isSubmitting}>
               {isSubmitting ? 'Verifying...' : 'Verify & Change'}
             </Button>
+=======
+          <div className="dashboard-card-surface" style={{ marginBottom: 20 }}>
+            <p style={{ color: 'var(--text-secondary)', marginBottom: 4 }}>{t('changePhone.otpSent')}</p>
+            <p style={{ fontWeight: 600, color: 'var(--text)' }}>{formData.newPhone}</p>
+          </div>
+          <Input label={t('changePhone.otp')} name="otp" type="text" value={formData.otp} onChange={handleChange} error={errors.otp} required placeholder={t('changePhone.otpPlaceholder')} />
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+            <Button type="button" variant="secondary" onClick={() => setShowOtp(false)} disabled={isSubmitting}>{t('changePhone.back')}</Button>
+            <Button type="submit" variant="primary" disabled={isSubmitting}>{isSubmitting ? t('changePhone.verifying') : t('changePhone.verify')}</Button>
+>>>>>>> e66c1ea (Update app)
           </div>
         </form>
       )}

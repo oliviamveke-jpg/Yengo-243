@@ -189,8 +189,13 @@ export async function processMobileMoneyPayment({
   // Simulate processing
   await simulateProcessing(2000 + Math.random() * 1000)
   
+<<<<<<< HEAD
   // Randomly succeed or fail (80% success rate for simulation)
   const success = Math.random() > 0.2
+=======
+  // Simulated development payment: keep deterministic so checkout testing is stable.
+  const success = true
+>>>>>>> e66c1ea (Update app)
   
   // Update transaction status
   const updatedPayments = getPayments()
@@ -259,8 +264,13 @@ export async function processCreditCardPayment({
   // Simulate processing
   await simulateProcessing(2500 + Math.random() * 1000)
   
+<<<<<<< HEAD
   // Randomly succeed or fail (90% success rate for simulation)
   const success = Math.random() > 0.1
+=======
+  // Simulated development payment: keep deterministic so checkout testing is stable.
+  const success = true
+>>>>>>> e66c1ea (Update app)
   
   // Update transaction status
   const updatedPayments = getPayments()

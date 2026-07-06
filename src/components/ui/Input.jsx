@@ -1,5 +1,6 @@
 import React from 'react'
 
+<<<<<<< HEAD
 export default function Input({ label, type = 'text', value, onChange, placeholder, required = false, error, disabled = false, name }) {
   return (
     <div style={{ marginBottom: '16px' }}>
@@ -48,6 +49,35 @@ export default function Input({ label, type = 'text', value, onChange, placehold
           {error}
         </p>
       )}
+=======
+/**
+ * Input — Design system input component
+ * Rounded, consistent spacing, same labels, same validation messages
+ */
+export default function Input({ label, type = 'text', value, onChange, placeholder, required = false, error, disabled = false, name, leftIcon, style: extraStyle = {} }) {
+  return (
+    <div className="form-group" style={extraStyle}>
+      {label && (
+        <label className="form-label">
+          {label}
+          {required && <span className="form-required">*</span>}
+        </label>
+      )}
+      <div className="form-input-wrapper">
+        {leftIcon && <span className="form-input-icon">{leftIcon}</span>}
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          placeholder={placeholder}
+          required={required}
+          disabled={disabled}
+          className={`form-input${leftIcon ? ' form-input-with-icon' : ''}${error ? ' form-input-error' : ''}`}
+        />
+      </div>
+      {error && <p className="form-error">{error}</p>}
+>>>>>>> e66c1ea (Update app)
     </div>
   )
 }

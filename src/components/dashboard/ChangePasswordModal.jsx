@@ -3,8 +3,16 @@ import Modal from '../ui/Modal'
 import Input from '../ui/Input'
 import Button from '../ui/Button'
 import { validateRequired } from '../../utils/validation'
+<<<<<<< HEAD
 
 export default function ChangePasswordModal({ isOpen, onClose, currentUser, onPasswordChanged }) {
+=======
+import { userService } from '../../services/userService'
+import { useTranslation } from '../../i18n/I18nProvider'
+
+export default function ChangePasswordModal({ isOpen, onClose, currentUser, onPasswordChanged }) {
+  const { t } = useTranslation()
+>>>>>>> e66c1ea (Update app)
   const [formData, setFormData] = useState({
     currentPassword: '',
     newPassword: '',
@@ -23,6 +31,7 @@ export default function ChangePasswordModal({ isOpen, onClose, currentUser, onPa
 
   const validate = () => {
     const newErrors = {}
+<<<<<<< HEAD
 
     if (!validateRequired(formData.currentPassword)) {
       newErrors.currentPassword = 'Current password is required'
@@ -40,12 +49,20 @@ export default function ChangePasswordModal({ isOpen, onClose, currentUser, onPa
       newErrors.confirmPassword = 'Passwords do not match'
     }
 
+=======
+    if (!validateRequired(formData.currentPassword)) newErrors.currentPassword = t('changePassword.currentRequired')
+    if (!validateRequired(formData.newPassword)) newErrors.newPassword = t('changePassword.newRequired')
+    else if (formData.newPassword.length < 6) newErrors.newPassword = t('changePassword.tooShort')
+    if (!validateRequired(formData.confirmPassword)) newErrors.confirmPassword = t('changePassword.confirmRequired')
+    else if (formData.newPassword !== formData.confirmPassword) newErrors.confirmPassword = t('changePassword.passwordsDontMatch')
+>>>>>>> e66c1ea (Update app)
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+<<<<<<< HEAD
 
     if (!validate()) return
 
@@ -75,11 +92,23 @@ export default function ChangePasswordModal({ isOpen, onClose, currentUser, onPa
     } catch (error) {
       console.error('Error changing password:', error)
       alert('Failed to change password. Please try again.')
+=======
+    if (!validate()) return
+    setIsSubmitting(true)
+    try {
+      const updatedUser = userService.updateUser(currentUser.id, { password: formData.newPassword }) || { ...currentUser, password: formData.newPassword }
+      if (!updatedUser) throw new Error('User not found')
+      onPasswordChanged(updatedUser)
+      onClose()
+    } catch (error) {
+      console.error('Error changing password:', error)
+>>>>>>> e66c1ea (Update app)
     } finally {
       setIsSubmitting(false)
     }
   }
 
+<<<<<<< HEAD
   const handleClose = () => {
     setFormData({ currentPassword: '', newPassword: '', confirmPassword: '' })
     setErrors({})
@@ -125,6 +154,17 @@ export default function ChangePasswordModal({ isOpen, onClose, currentUser, onPa
           <Button type="submit" variant="primary" disabled={isSubmitting}>
             {isSubmitting ? 'Changing...' : 'Change Password'}
           </Button>
+=======
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={t('changePassword.title')} size="medium">
+      <form onSubmit={handleSubmit}>
+        <Input label={t('changePassword.current')} name="currentPassword" type="password" value={formData.currentPassword} onChange={handleChange} error={errors.currentPassword} required />
+        <Input label={t('changePassword.new')} name="newPassword" type="password" value={formData.newPassword} onChange={handleChange} error={errors.newPassword} required placeholder={t('changePassword.minChars')} />
+        <Input label={t('changePassword.confirm')} name="confirmPassword" type="password" value={formData.confirmPassword} onChange={handleChange} error={errors.confirmPassword} required />
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end', marginTop: 8 }}>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>{t('changePassword.cancel')}</Button>
+          <Button type="submit" variant="primary" disabled={isSubmitting}>{isSubmitting ? t('changePassword.changing') : t('changePassword.change')}</Button>
+>>>>>>> e66c1ea (Update app)
         </div>
       </form>
     </Modal>

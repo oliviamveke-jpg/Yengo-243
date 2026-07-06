@@ -1,6 +1,7 @@
 import React from 'react'
 import Modal from '../ui/Modal'
 import Button from '../ui/Button'
+<<<<<<< HEAD
 import { vendorStorage } from '../../utils/storage'
 
 export default function DeleteListingModal({ isOpen, onClose, listing, vendor, onListingDeleted }) {
@@ -28,11 +29,30 @@ export default function DeleteListingModal({ isOpen, onClose, listing, vendor, o
     } catch (error) {
       console.error('Error deleting listing:', error)
       alert('Failed to delete listing. Please try again.')
+=======
+import { listingService } from '../../services/listingService'
+import { useTranslation } from '../../i18n/I18nProvider'
+
+export default function DeleteListingModal({ isOpen, onClose, listing, onDeleted }) {
+  const { t } = useTranslation()
+  const [isDeleting, setIsDeleting] = React.useState(false)
+
+  const handleDelete = async (e) => {
+    e.preventDefault()
+    setIsDeleting(true)
+    try {
+      listingService.deleteListing(listing.id)
+      onDeleted(listing.id)
+      onClose()
+    } catch (error) {
+      console.error('Error deleting listing:', error)
+>>>>>>> e66c1ea (Update app)
     } finally {
       setIsDeleting(false)
     }
   }
 
+<<<<<<< HEAD
   if (!listing) {
     return null
   }
@@ -64,6 +84,18 @@ export default function DeleteListingModal({ isOpen, onClose, listing, vendor, o
           </Button>
         </div>
       </div>
+=======
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={t('deleteListing.title')} size="medium">
+      <form onSubmit={handleDelete}>
+        <p style={{ color: 'var(--text)', marginBottom: 8 }}>{t('deleteListing.confirm')}</p>
+        <p style={{ color: '#ef4444', fontSize: '0.9rem', marginBottom: 24 }}>{t('deleteListing.warning')}</p>
+        <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
+          <Button type="button" variant="secondary" onClick={onClose} disabled={isDeleting}>{t('deleteListing.cancel')}</Button>
+          <Button type="submit" variant="danger" disabled={isDeleting}>{isDeleting ? t('deleteListing.deleting') : t('deleteListing.confirmButton')}</Button>
+        </div>
+      </form>
+>>>>>>> e66c1ea (Update app)
     </Modal>
   )
 }

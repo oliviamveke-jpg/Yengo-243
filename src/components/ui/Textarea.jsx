@@ -1,5 +1,6 @@
 import React from 'react'
 
+<<<<<<< HEAD
 export default function Textarea({ label, value, onChange, placeholder, required = false, error, disabled = false, rows = 4, name }) {
   return (
     <div style={{ marginBottom: '16px' }}>
@@ -15,6 +16,19 @@ export default function Textarea({ label, value, onChange, placeholder, required
         >
           {label}
           {required && <span style={{ color: '#ef4444', marginLeft: '4px' }}>*</span>}
+=======
+/**
+ * Textarea — Design system textarea component
+ * Matches Input styling for consistency
+ */
+export default function Textarea({ label, value, onChange, placeholder, required = false, error, disabled = false, rows = 4, name, style: extraStyle = {} }) {
+  return (
+    <div className="form-group" style={extraStyle}>
+      {label && (
+        <label className="form-label">
+          {label}
+          {required && <span className="form-required">*</span>}
+>>>>>>> e66c1ea (Update app)
         </label>
       )}
       <textarea
@@ -25,6 +39,7 @@ export default function Textarea({ label, value, onChange, placeholder, required
         required={required}
         disabled={disabled}
         rows={rows}
+<<<<<<< HEAD
         style={{
           width: '100%',
           padding: '12px 16px',
@@ -50,6 +65,11 @@ export default function Textarea({ label, value, onChange, placeholder, required
           {error}
         </p>
       )}
+=======
+        className={`form-input${error ? ' form-input-error' : ''}`}
+      />
+      {error && <p className="form-error">{error}</p>}
+>>>>>>> e66c1ea (Update app)
     </div>
   )
 }

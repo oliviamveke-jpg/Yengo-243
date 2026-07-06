@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import React, { useEffect, useMemo, useState, useRef } from 'react'
 import L from 'leaflet'
 import MapView from './components/MapView'
@@ -66,6 +67,44 @@ function writeStorage(key, value) {
     console.warn('writeStorage', key, e)
   }
 }
+=======
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import { Layers, Navigation, Plus, Minus, ShoppingCart } from 'lucide-react'
+import MapView from './components/MapView'
+import VendorDashboard from './components/VendorDashboard'
+import ProfileDropdown from './components/ProfileDropdown'
+import ProfileModal from './components/ProfileModal'
+import SettingsPage from './components/SettingsPage'
+import FavoritesPage from './components/FavoritesPage'
+import AdminDashboard from './components/AdminDashboard'
+import AuthModal from './components/AuthModal'
+import TopSearchBar from './components/TopSearchBar'
+import FilterRow from './components/FilterRow'
+import SearchResultsPanel from './components/SearchResultsPanel'
+import BusinessDetailsDrawer from './components/BusinessDetailsDrawer'
+import CartPaymentModal from './components/CartPaymentModal'
+import { ThemeProvider } from './theme/ThemeProvider'
+import { I18nProvider, useTranslation } from './i18n/I18nProvider'
+import { vendors as seedVendors, seedReviews, sampleUsers } from './data/marketplaceData'
+import { listingService } from './services/listingService'
+import { reviewService } from './services/reviewService'
+import { storageAdapter, STORAGE_KEYS } from './services/storageAdapter'
+import { userService } from './services/userService'
+import { favoritesService } from './services/favoritesService'
+import { subcategoryService } from './services/subcategoryService'
+import {
+  getProvinceOptions,
+  getCommuneOptions,
+  getQuartierOptions,
+  vendorMatchesLocation,
+  migrateVendors,
+  getVendorLocationDisplay,
+  getVendorLocationFull
+} from './utils/locationUtils'
+import { shouldTrackAnalytics } from './utils/analyticsUtils'
+import { getCategoryConfig, getCategoryColor } from './data/categoryConfig'
+>>>>>>> e66c1ea (Update app)
 
 function normalizeText(value) {
   return String(value || '').toLowerCase().trim()
@@ -73,7 +112,11 @@ function normalizeText(value) {
 
 function productMatchesSearch(product, q) {
   if (!q) return true
+<<<<<<< HEAD
   var haystack = [product.title, product.category, product.subcategory, product.description]
+=======
+  const haystack = [product.title, product.category, product.subcategory, product.description]
+>>>>>>> e66c1ea (Update app)
     .filter(Boolean)
     .join(' ')
     .toLowerCase()
@@ -82,13 +125,18 @@ function productMatchesSearch(product, q) {
 
 function vendorMatchesSearch(vendor, q) {
   if (!q) return true
+<<<<<<< HEAD
   var haystack = [vendor.name, vendor.category, vendor.province, vendor.commune, vendor.quartier, vendor.rue, vendor.street, vendor.description]
+=======
+  const haystack = [vendor.name, vendor.category, vendor.province, vendor.commune, vendor.quartier, vendor.rue, vendor.street, vendor.description]
+>>>>>>> e66c1ea (Update app)
     .filter(Boolean)
     .join(' ')
     .toLowerCase()
   return haystack.includes(q)
 }
 
+<<<<<<< HEAD
 function filterVendors(vendors, filters, q) {
   const normalizedQuery = normalizeText(q)
   return vendors.filter(vendor => {
@@ -526,25 +574,208 @@ console.log('Filtered vendors:', filteredVendors)
 
   const addToCart = product => {
     setCart(prev => {
+=======
+function formatPrice(value, currency) {
+  if (currency === 'FC') return `${Number(value || 0).toFixed(0)} FC`
+  return `$${Number(value || 0).toFixed(2)}`
+}
+
+function AppContent() {
+  const { t } = useTranslation()
+  // Migrate seed vendors: assign locationId to any vendor that lacks it
+  const [vendors, setVendors] = useState(() => migrateVendors(listingService.getVendors(seedVendors)))
+  const [reviews, setReviews] = useState(() => reviewService.getReviews(seedReviews))
+  const [orders, setOrders] = useState(() => storageAdapter.read(STORAGE_KEYS.orders, []))
+  const [users, setUsers] = useState(() => userService.getUsers(sampleUsers))
+  const [currentUser, setCurrentUser] = useState(() => userService.getCurrentUser() || sampleUsers[0])
+  const [currency, setCurrency] = useState(() => storageAdapter.readString(STORAGE_KEYS.currency, '$'))
+  const [filters, setFilters] = useState({ province: '', commune: '', quartier: '', street: '', ville: '', category: '', subcategory: '' })
+  const [searchQuery, setSearchQuery] = useState('')
+  const [selectedVendorId, setSelectedVendorId] = useState(vendors[0]?.id || null)
+  const [showFilters, setShowFilters] = useState(false)
+
+  const handleFiltersChange = useCallback((nextFilters) => {
+    setFilters((current) => {
+      const updated = typeof nextFilters === 'function' ? nextFilters(current) : nextFilters
+      if (updated.province !== current.province) {
+        return { ...updated, commune: '', quartier: '' }
+      }
+      if (updated.commune !== current.commune) {
+        return { ...updated, quartier: '' }
+      }
+      return updated
+    })
+  }, [])
+
+  const [activeVendorShopId, setActiveVendorShopId] = useState(null)
+  const [activeBusinessDrawerId, setActiveBusinessDrawerId] = useState(null)
+  const [activeProduct, setActiveProduct] = useState(null)
+  const [manageVendorId, setManageVendorId] = useState(null)
+  const [isCartOpen, setIsCartOpen] = useState(false)
+  const [cart, setCart] = useState({})
+  const [favorites, setFavorites] = useState(() => {
+    const user = userService.getCurrentUser() || sampleUsers[0]
+    return user ? favoritesService.loadFavorites(user.id) : {}
+  })
+  const [toast, setToast] = useState(null)
+  const [recentlyViewed, setRecentlyViewed] = useState(() => storageAdapter.read('yengoRecentlyViewed', []))
+  const [viewMode, setViewMode] = useState('marketplace')
+  const [showProfile, setShowProfile] = useState(false)
+  const [showAuthPanel, setShowAuthPanel] = useState(false)
+  const [authMode, setAuthMode] = useState('login')
+  const [showMarkerPanel, setShowMarkerPanel] = useState(false)
+  const markerPanelRef = React.useRef(null)
+
+  useEffect(() => {
+    if (!showMarkerPanel) return
+    const onDocumentClick = (e) => {
+      if (markerPanelRef.current && !markerPanelRef.current.contains(e.target)) {
+        setShowMarkerPanel(false)
+      }
+    }
+    document.addEventListener('mousedown', onDocumentClick)
+    return () => document.removeEventListener('mousedown', onDocumentClick)
+  }, [showMarkerPanel])
+
+  const mapRef = useRef(null)
+const [showResultsModal, setShowResultsModal] = useState(false)
+  const [showFiltersModal, setShowFiltersModal] = useState(false)
+
+  const [hiddenCategories, setHiddenCategories] = useState(() => {
+    try {
+      const stored = localStorage.getItem('yengoHiddenCategories')
+      return stored ? JSON.parse(stored) : []
+    } catch {
+      return []
+    }
+  })
+
+  useEffect(() => {
+    localStorage.setItem('yengoHiddenCategories', JSON.stringify(hiddenCategories))
+  }, [hiddenCategories])
+
+  // ═══ Subcategory migration — run once on startup ═══
+  useEffect(() => {
+    // Migrate existing vendor products to have subcategoryId values
+    const migrated = subcategoryService.migrateVendors(vendors)
+    if (migrated > 0) {
+      listingService.setVendors(vendors)
+    }
+  }, [])
+
+  const availableCategories = useMemo(() => {
+    return Array.from(new Set(vendors.map(v => v.category).filter(Boolean))).sort()
+  }, [vendors])
+
+  const toggleCategory = useCallback((category) => {
+    setHiddenCategories(prev =>
+      prev.includes(category)
+        ? prev.filter(c => c !== category)
+        : [...prev, category]
+    )
+  }, [])
+
+  useEffect(() => {
+    listingService.setVendors(vendors)
+  }, [vendors])
+
+  useEffect(() => {
+    reviewService.setReviews(reviews)
+  }, [reviews])
+
+  useEffect(() => {
+    storageAdapter.write(STORAGE_KEYS.orders, orders)
+  }, [orders])
+
+  useEffect(() => {
+    userService.setUsers(users)
+  }, [users])
+
+  useEffect(() => {
+    if (currentUser) {
+      userService.setCurrentUser(currentUser)
+    } else {
+      userService.clearCurrentUser()
+    }
+  }, [currentUser])
+
+  useEffect(() => {
+    storageAdapter.writeString(STORAGE_KEYS.currency, currency)
+  }, [currency])
+
+  const filteredVendors = useMemo(() => {
+    const q = normalizeText(searchQuery)
+    return vendors.filter((vendor) => {
+      if (filters.province && vendor.province !== filters.province) return false
+      if (filters.commune && vendor.commune !== filters.commune) return false
+      if (filters.category && vendor.category !== filters.category) return false
+      if (!q) return true
+      return vendorMatchesSearch(vendor, q) || (vendor.products || []).some((product) => productMatchesSearch(product, q))
+    })
+  }, [vendors, filters, searchQuery])
+
+  const filteredProducts = useMemo(() => {
+    const q = normalizeText(searchQuery)
+    return filteredVendors.flatMap((vendor) => (vendor.products || []).map((product) => ({ ...product, vendorId: vendor.id, vendorName: vendor.name }))).filter((product) => {
+      if (filters.category && product.category !== filters.category) return false
+      if (!q) return true
+      return productMatchesSearch(product, q) || vendorMatchesSearch(vendors.find((vendor) => vendor.id === product.vendorId) || {}, q)
+    })
+  }, [filteredVendors, filters, searchQuery, vendors])
+
+  const selectedVendor = useMemo(() => vendors.find((vendor) => vendor.id === selectedVendorId) || vendors[0] || null, [vendors, selectedVendorId])
+  const cartCount = useMemo(() => Object.values(cart).reduce((sum, entry) => sum + entry.qty, 0), [cart])
+
+  const handleVendorSelection = useCallback((vendorId, openShop = false) => {
+    setSelectedVendorId(vendorId)
+    if (openShop) setActiveBusinessDrawerId(vendorId)
+    setRecentlyViewed((prev) => [{ userId: currentUser?.id || 'guest', vendorId, viewedAt: new Date().toISOString() }, ...prev].slice(0, 20))
+    setVendors((prev) => prev.map((vendor) => {
+      if (vendor.id !== vendorId) return vendor
+      // Do not count views when the owner is looking at their own business
+      if (!shouldTrackAnalytics(currentUser, vendor)) return vendor
+      return { ...vendor, viewCount: (vendor.viewCount || 0) + 1 }
+    }))
+  }, [currentUser])
+
+  const addToCart = useCallback((product) => {
+    setCart((prev) => {
+>>>>>>> e66c1ea (Update app)
       const next = { ...prev }
       if (!next[product.id]) next[product.id] = { product, qty: 0 }
       next[product.id].qty += 1
       return next
     })
+<<<<<<< HEAD
   }
 
   const removeFromCart = productId => {
     setCart(prev => {
+=======
+  }, [])
+
+  const removeFromCart = useCallback((productId) => {
+    setCart((prev) => {
+>>>>>>> e66c1ea (Update app)
       const next = { ...prev }
       delete next[productId]
       return next
     })
+<<<<<<< HEAD
   }
 
   const checkoutCart = () => {
     const entries = Object.values(cart).map(entry => ({
       id: `order-${Date.now()}-${entry.product.id}`,
       customerId: currentUser.id,
+=======
+  }, [])
+
+  const checkoutCart = useCallback(() => {
+    const entries = Object.values(cart).map((entry) => ({
+      id: `order-${Date.now()}-${entry.product.id}`,
+      customerId: currentUser?.id || 'guest',
+>>>>>>> e66c1ea (Update app)
       vendorId: entry.product.vendorId,
       productId: entry.product.id,
       qty: entry.qty,
@@ -552,6 +783,7 @@ console.log('Filtered vendors:', filteredVendors)
       status: 'completed',
       createdAt: new Date().toISOString()
     }))
+<<<<<<< HEAD
     if (entries.length) {
       setOrders(prev => [...prev, ...entries])
       setCart({})
@@ -888,10 +1120,388 @@ console.log('Filtered vendors:', filteredVendors)
               currentUser={currentUser}
               filters={filters}
               onFiltersChange={setFilters}
+=======
+
+    if (entries.length) {
+      setOrders((prev) => [...prev, ...entries])
+      setCart({})
+      setIsCartOpen(false)
+    }
+  }, [cart, currentUser])
+
+  const handleOrderComplete = useCallback((entries) => {
+    if (entries.length) {
+      setOrders((prev) => [...prev, ...entries])
+      setCart({})
+      setIsCartOpen(false)
+    }
+  }, [])
+
+  const saveReview = useCallback((review) => {
+    const saved = reviewService.addReview(review)
+    setReviews((prev) => [...prev, saved])
+  }, [])
+
+  const handleAuthLogin = useCallback((user) => {
+    setCurrentUser(user)
+    setShowAuthPanel(false)
+  }, [])
+
+  const handleAuthRegister = useCallback((user) => {
+    setCurrentUser(user)
+    setShowAuthPanel(false)
+  }, [])
+
+  const handleAuthSwitchMode = useCallback(() => {
+    setAuthMode((prev) => (prev === 'login' ? 'register' : 'login'))
+  }, [])
+
+  const handleLogout = useCallback(() => {
+    setCurrentUser(null)
+    userService.clearCurrentUser()
+    storageAdapter.remove(STORAGE_KEYS.sessions)
+    sessionStorage.clear()
+    setViewMode('marketplace')
+    setShowAuthPanel(false)
+  }, [])
+
+  const handleUserUpdate = useCallback((updatedUser) => {
+    setCurrentUser(updatedUser)
+    userService.setCurrentUser(updatedUser)
+  }, [])
+
+  const handleProfileUpdate = useCallback((updatedVendor, updatedUser) => {
+    // Update user state
+    if (updatedUser) {
+      setCurrentUser(updatedUser)
+      userService.setCurrentUser(updatedUser)
+    }
+    // Update vendor state
+    if (updatedVendor) {
+      setVendors(prev => prev.map(v => v.id === updatedVendor.id ? updatedVendor : v))
+    }
+  }, [])
+
+  const handleDeleteAccount = useCallback(() => {
+    if (!currentUser) return
+    userService.updateUser(currentUser.id, { deleted: true })
+    userService.clearCurrentUser()
+    setCurrentUser(null)
+    storageAdapter.remove(STORAGE_KEYS.sessions)
+    sessionStorage.clear()
+    setViewMode('marketplace')
+  }, [currentUser])
+
+  // ═══ Favorites Management ═══
+  const showFavToast = useCallback((message) => {
+    setToast(message)
+    setTimeout(() => setToast(null), 3000)
+  }, [])
+
+  const handleToggleFavorite = useCallback((businessId) => {
+    if (!currentUser || currentUser.role === 'vendor') return
+
+    const userId = currentUser.id
+    const isCurrentlyFav = favoritesService.isFavorite(userId, businessId)
+
+    // Optimistic update
+    if (isCurrentlyFav) {
+      const newFavs = { ...favorites }
+      delete newFavs[businessId]
+      setFavorites(newFavs)
+    } else {
+      const entry = { businessId, savedAt: new Date().toISOString() }
+      setFavorites(prev => ({ ...prev, [businessId]: entry }))
+    }
+
+    // Background sync
+    favoritesService.toggleFavorite(userId, businessId)
+
+    // Toast
+    if (isCurrentlyFav) {
+      showFavToast('Removed from Favorites')
+    } else {
+      showFavToast('Added to Favorites ❤️')
+    }
+  }, [currentUser, favorites, showFavToast])
+
+  const handleRemoveFavorite = useCallback((businessId) => {
+    if (!currentUser || currentUser.role === 'vendor') return
+
+    const userId = currentUser.id
+
+    // Optimistic update
+    const newFavs = { ...favorites }
+    delete newFavs[businessId]
+    setFavorites(newFavs)
+
+    // Background sync
+    favoritesService.removeFavorite(userId, businessId)
+
+    showFavToast('Removed from Favorites')
+  }, [currentUser, favorites, showFavToast])
+
+  const handleFavoritesBackToMap = useCallback(() => {
+    setViewMode('marketplace')
+  }, [])
+
+  const handleFavoritesViewBusiness = useCallback((vendorId) => {
+    setViewMode('marketplace')
+    if (vendorId) {
+      // Small delay to let the map render, then open the drawer
+      setTimeout(() => {
+        setActiveBusinessDrawerId(vendorId)
+      }, 100)
+    }
+  }, [])
+
+  // Load favorites on user login
+  useEffect(() => {
+    if (currentUser && currentUser.role !== 'vendor') {
+      const userFavs = favoritesService.loadFavorites(currentUser.id)
+      setFavorites(userFavs)
+    } else if (!currentUser) {
+      setFavorites({})
+    }
+  }, [currentUser?.id])
+
+  // Location dropdown options are populated EXCLUSIVELY from the master location dataset,
+  // never by inspecting vendor/business records.
+  const provinces = useMemo(() => getProvinceOptions(), [])
+  const communes = useMemo(() => {
+    return filters.province ? getCommuneOptions(filters.province) : []
+  }, [filters.province])
+  const quartiers = useMemo(() => {
+    return filters.commune ? getQuartierOptions(filters.commune) : []
+  }, [filters.commune])
+  const categories = useMemo(() => Array.from(new Set(vendors.map(v => v.category).filter(Boolean))).sort(), [vendors])
+
+  return (
+    <div className="app-shell">
+
+      {/* ═══ FULLSCREEN MAP — only on marketplace mode ═══ */}
+      {viewMode === 'marketplace' && (
+        <div className="map-layer">
+          <MapView
+            ref={mapRef}
+            vendors={filteredVendors}
+            selectedVendorId={selectedVendor?.id}
+            markersVisible={true}
+            hiddenCategories={hiddenCategories}
+            targetCoordinate={selectedVendor?.coords || null}
+            targetZoom={12}
+            onBusinessSelect={setActiveBusinessDrawerId}
+          />
+        </div>
+      )}
+
+      {/* ═══ FLOATING LOGO PILL (top-right) — only on marketplace mode, hidden in details mode ═══ */}
+      <AnimatePresence>
+        {viewMode === 'marketplace' && activeBusinessDrawerId === null && (
+          <motion.div
+            key="floating-logo"
+            className="floating-logo-pill"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            transition={{ duration: 0.2 }}
+          >
+            Yengo<span>+243</span>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══ FLOATING USER MENU (top-left) — hidden in details mode ═══ */}
+      <AnimatePresence>
+        {viewMode === 'marketplace' && activeBusinessDrawerId === null && (
+          <motion.div
+            key="floating-user-menu"
+            className="floating-user-menu"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, x: -12 }}
+            transition={{ duration: 0.2 }}
+          >
+            {currentUser ? (
+              <ProfileDropdown
+                user={currentUser}
+                onLogout={handleLogout}
+                onNavigate={() => {}}
+                viewMode={viewMode}
+                setViewMode={setViewMode}
+                onOpenProfile={() => setShowProfile(true)}
+              />
+            ) : (
+              <>
+                <button className="btn btn-sm btn-ghost" onClick={() => { setAuthMode('login'); setShowAuthPanel(true) }}>{t('auth.login')}</button>
+                <button className="btn btn-sm btn-primary" onClick={() => { setAuthMode('register'); setShowAuthPanel(true) }}>{t('auth.register')}</button>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══ CENTERED SEARCH BAR — hidden in details mode ═══ */}
+      <AnimatePresence>
+        {viewMode === 'marketplace' && activeBusinessDrawerId === null && (
+          <TopSearchBar
+            key="top-search-bar"
+            value={searchQuery}
+            onChange={setSearchQuery}
+            onFilterToggle={() => setShowFilters(prev => !prev)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ═══ FILTERS ROW — hidden in details mode ═══ */}
+      <AnimatePresence>
+        {viewMode === 'marketplace' && activeBusinessDrawerId === null && (
+          <motion.div
+            key="filters-container"
+            className="filters-container"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0, y: -8 }}
+            transition={{ duration: 0.22, ease: 'easeInOut' }}
+          >
+            <FilterRow
+              filters={filters}
+              onFilterChange={(key, value) => handleFiltersChange({ ...filters, [key]: value })}
+              provinces={provinces}
+              communes={communes}
+              quartiers={quartiers}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ═══ BOTTOM-RIGHT FLOATING MAP CONTROLS — only on marketplace mode ═══ */}
+      {viewMode === 'marketplace' && (
+        <div className="floating-map-controls">
+          <button className="map-control-btn cart-btn" title={t('market.cart')} onClick={() => setIsCartOpen(true)}>
+            <ShoppingCart size={20} />
+            {cartCount > 0 && <span className="cart-bubble">{cartCount}</span>}
+          </button>
+          <button className="map-control-btn" title="Zoom In" onClick={() => {
+            mapRef.current?.zoomIn()
+          }}>
+            <Plus size={20} />
+          </button>
+          <button className="map-control-btn" title="Zoom Out" onClick={() => {
+            mapRef.current?.zoomOut()
+          }}>
+            <Minus size={20} />
+          </button>
+          <button className="map-control-btn" title="Current Location" onClick={() => {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                mapRef.current?.flyTo([pos.coords.latitude, pos.coords.longitude], 15)
+              },
+              () => {}
+            )
+          }}>
+            <Navigation size={20} />
+          </button>
+          <div ref={markerPanelRef} style={{ position: 'relative' }}>
+            <button
+              className={`map-control-btn ${showMarkerPanel ? 'active' : ''}`}
+              title={t('map.markers')}
+              onClick={() => setShowMarkerPanel(prev => !prev)}
+            >
+              <Layers size={20} />
+            </button>
+            <AnimatePresence>
+              {showMarkerPanel && (
+                <motion.div
+                  className="marker-category-panel"
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                  transition={{ duration: 0.15 }}
+                >
+                  <div className="marker-panel-title">{t('map.markerCategories')}</div>
+                  {availableCategories.map(cat => {
+                    const isHidden = hiddenCategories.includes(cat)
+                    const config = getCategoryConfig(cat)
+                    return (
+                      <label key={cat} className={`marker-category-item ${isHidden ? 'hidden' : ''}`}>
+                        <input
+                          type="checkbox"
+                          checked={!isHidden}
+                          onChange={() => toggleCategory(cat)}
+                        />
+                        <span
+                          className="marker-category-dot"
+                          style={{ background: config.color }}
+                        />
+                        <span className="marker-category-icon">{config.icon}</span>
+                        <span className="marker-category-name">{cat}</span>
+                      </label>
+                    )
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+        </div>
+      )}
+
+      {/* ═══ SEARCH RESULTS TRIGGER + BOTTOM SHEET — hidden in details mode ═══ */}
+      <AnimatePresence>
+        {viewMode === 'marketplace' && activeBusinessDrawerId === null && (
+          <SearchResultsPanel
+            key="search-results-panel"
+            vendors={filteredVendors}
+            selectedVendor={selectedVendor}
+            onVendorClick={(id) => handleVendorSelection(id, true)}
+            searchQuery={searchQuery}
+            onSearchQueryChange={setSearchQuery}
+            currency={currency}
+            currentUser={currentUser}
+            favorites={favorites}
+            onToggleFavorite={handleToggleFavorite}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ═══ RESULTS MODAL ═══ */}
+      {showResultsModal && (
+        <div className="modal-overlay" onClick={() => setShowResultsModal(false)}>
+          <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
+            <MarketplaceResultsModal
+              onClose={() => setShowResultsModal(false)}
+              vendors={filteredVendors}
+              products={filteredProducts}
+              selectedVendor={selectedVendor}
+              onVendorClick={(id) => { handleVendorSelection(id, true); setShowResultsModal(false) }}
+              currentUser={currentUser}
+              addToCart={addToCart}
+              onOpenProduct={setActiveProduct}
+              currency={currency}
+              searchQuery={searchQuery}
+              onSearchQueryChange={setSearchQuery}
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ═══ FILTERS MODAL ═══ */}
+      {showFiltersModal && (
+        <div className="modal-overlay" onClick={() => setShowFiltersModal(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <MarketplaceFiltersModal
+              onClose={() => setShowFiltersModal(false)}
+              filters={filters}
+              onFiltersChange={handleFiltersChange}
+              vendors={vendors}
+>>>>>>> e66c1ea (Update app)
               searchQuery={searchQuery}
               onSearchQueryChange={setSearchQuery}
               currency={currency}
               onCurrencyChange={setCurrency}
+<<<<<<< HEAD
               filteredVendors={filteredVendors}
               filteredProducts={filteredProducts}
               selectedVendor={selectedVendor}
@@ -1224,10 +1834,582 @@ console.log('Filtered vendors:', filteredVendors)
                   </button>
                 </div>
               )}
+=======
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ═══ DASHBOARD MODE ═══ */}
+      {viewMode === 'dashboard' && (
+        <div className="dashboard-wrapper">
+          <header className="dashboard-header">
+            <div className="dashboard-title">
+              <h1>Yengo<span>+243</span> Dashboard</h1>
+              <p className="dashboard-subtitle">MARKETPLACE CONTROL CENTER</p>
+            </div>
+            <div className="header-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+              <button className="btn btn-sm" onClick={() => setViewMode('marketplace')}>
+                ← Map
+              </button>
+              {currentUser ? (
+                <ProfileDropdown user={currentUser} onLogout={handleLogout} onNavigate={() => {}} viewMode={viewMode} setViewMode={setViewMode} onOpenProfile={() => setShowProfile(true)} />
+              ) : (
+                <>
+                  <button className="btn btn-sm btn-ghost" onClick={() => { setAuthMode('login'); setShowAuthPanel(true) }}>{t('auth.login')}</button>
+                  <button className="btn btn-sm btn-primary" onClick={() => { setAuthMode('register'); setShowAuthPanel(true) }}>{t('auth.register')}</button>
+                </>
+              )}
+            </div>
+          </header>
+          <main className="dashboard-main">
+            {currentUser && currentUser.role === 'vendor' ? (
+              <VendorDashboard currentUser={currentUser} vendors={vendors} setVendors={setVendors} orders={orders} reviews={reviews} cart={cart} setReviews={setReviews} />
+            ) : currentUser && currentUser.role === 'admin' ? (
+              <AdminDashboard setViewMode={setViewMode} />
+            ) : (
+              <div className="dashboard-message">
+                <h2>Vendor Dashboard</h2>
+                <p>Only vendor accounts may access this area.</p>
+              </div>
+            )}
+          </main>
+        </div>
+      )}
+
+      {/* ═══ PROFILE MODAL (replaces standalone ProfilePage) ═══ */}
+      {showProfile && currentUser && (
+        <ProfileModal
+          isOpen={showProfile}
+          onClose={() => setShowProfile(false)}
+          vendor={vendors.find(v => v.ownerId === currentUser.id || v.id === currentUser.id) || null}
+          currentUser={currentUser}
+          onProfileUpdate={handleProfileUpdate}
+        />
+      )}
+
+      {/* ═══ FAVORITES PAGE (buyer only) ═══ */}
+      {viewMode === 'favoritesPage' && currentUser && currentUser.role !== 'vendor' && (
+        <FavoritesPage
+          currentUser={currentUser}
+          favorites={favorites}
+          vendors={vendors}
+          onRemoveFavorite={handleRemoveFavorite}
+          onViewBusiness={handleFavoritesViewBusiness}
+          onBack={handleFavoritesBackToMap}
+        />
+      )}
+
+      {/* ═══ SETTINGS PAGE ═══ */}
+      {viewMode === 'settingsPage' && currentUser && (
+        <div className="standalone-page-wrapper">
+          <SettingsPage
+            currentUser={currentUser}
+            onUserUpdate={handleUserUpdate}
+            onBack={() => setViewMode('marketplace')}
+            onDeleteAccount={handleDeleteAccount}
+          />
+        </div>
+      )}
+
+      {/* ═══ AUTH MODAL ═══ */}
+      {showAuthPanel && (
+        <div className="modal-overlay" onClick={() => setShowAuthPanel(false)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header">
+              <h3>{authMode === 'login' ? t('auth.loginTitle') : t('auth.registerTitle')}</h3>
+              <button className="btn btn-sm btn-ghost" onClick={() => setShowAuthPanel(false)}>{t('general.close')}</button>
+            </div>
+            <div className="modal-body">
+              <AuthModal
+                mode={authMode}
+                onClose={() => setShowAuthPanel(false)}
+                onLogin={handleAuthLogin}
+                onRegister={handleAuthRegister}
+                onSwitchMode={handleAuthSwitchMode}
+              />
+>>>>>>> e66c1ea (Update app)
             </div>
           </div>
         </div>
       )}
+<<<<<<< HEAD
     </div>
   )
 }
+=======
+
+      {/* ═══ BUSINESS DETAILS DRAWER — floating left-side card ═══ */}
+      <BusinessDetailsDrawer
+        vendor={vendors.find(v => v.id === activeBusinessDrawerId) || null}
+        reviews={reviews}
+        isOpen={activeBusinessDrawerId !== null}
+        onClose={() => setActiveBusinessDrawerId(null)}
+        addToCart={addToCart}
+        currency={currency}
+        currentUser={currentUser}
+        favorites={favorites}
+        onToggleFavorite={handleToggleFavorite}
+        orders={orders}
+        onManageStore={(vendorId) => {
+          setActiveBusinessDrawerId(null)
+          // Open vendor shop modal
+          setActiveVendorShopId(vendorId)
+        }}
+        onEditBusiness={(vendorId) => {
+          setViewMode('dashboard')
+        }}
+        onAddProduct={(vendorId) => {
+          setViewMode('dashboard')
+        }}
+        onViewDashboard={() => setViewMode('dashboard')}
+      />
+
+      {/* ═══ PRODUCT DETAIL MODAL ═══ */}
+      {activeProduct && (
+        <div className="modal-overlay" onClick={() => setActiveProduct(null)}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            <ProductDetailModal
+              product={activeProduct}
+              onClose={() => setActiveProduct(null)}
+              addToCart={addToCart}
+              currency={currency}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* ═══ CART MODAL ═══ */}
+      {isCartOpen && (
+        <CartPaymentModal
+          cart={cart}
+          cartCount={cartCount}
+          onClose={() => setIsCartOpen(false)}
+          onRemove={removeFromCart}
+          currency={currency}
+          currentUser={currentUser}
+          onOrderComplete={handleOrderComplete}
+        />
+      )}
+
+      {/* ═══ TOAST NOTIFICATION ═══ */}
+      <AnimatePresence>
+        {toast && (
+          <motion.div
+            className="toast"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            transition={{ duration: 0.2 }}
+          >
+            {toast}
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <I18nProvider>
+        <AppContent />
+      </I18nProvider>
+    </ThemeProvider>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   RESULTS MODAL — uses CSS variables
+   ═══════════════════════════════════════════════════════════════ */
+function MarketplaceResultsModal({
+  onClose, vendors, products, selectedVendor,
+  onVendorClick, currentUser, addToCart, onOpenProduct,
+  currency, searchQuery, onSearchQueryChange, filters, onFiltersChange
+}) {
+  const [resultsView, setResultsView] = useState('vendors')
+  const allProducts = products || []
+  const allVendors = vendors || []
+  const { t } = useTranslation()
+  return (
+    <>
+      <div className="modal-header">
+        <h2>{t('modal.results')}</h2>
+        <button className="btn btn-sm btn-ghost" onClick={onClose}>{t('modal.close')}</button>
+      </div>
+      <div className="modal-body">
+        <div className="modal-search">
+          <span style={{ opacity: 0.4 }}>🔎</span>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => onSearchQueryChange(e.target.value)}
+            placeholder={t('modal.searchPlaceholder')}
+          />
+        </div>
+        <div className="results-tabs" style={{ display: 'flex', gap: 4, marginBottom: 8 }}>
+          <button
+            style={{
+              flex: 1, padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)',
+              background: resultsView === 'vendors' ? 'var(--primary)' : 'var(--surface)',
+              color: resultsView === 'vendors' ? '#fff' : 'var(--text)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer'
+            }}
+            onClick={() => setResultsView('vendors')}
+          >
+            {t('modal.vendorsTab')} ({allVendors.length})
+          </button>
+          <button
+            style={{
+              flex: 1, padding: '8px 16px', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)',
+              background: resultsView === 'products' ? 'var(--primary)' : 'var(--surface)',
+              color: resultsView === 'products' ? '#fff' : 'var(--text)', fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer'
+            }}
+            onClick={() => setResultsView('products')}
+          >
+            {t('modal.productsTab')} ({allProducts.length})
+          </button>
+        </div>
+        {resultsView === 'vendors' ? (
+          <div className="vendor-list" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {allVendors.length === 0 && (
+              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 24 }}>{t('modal.noVendors')}</p>
+            )}
+            {allVendors.slice().sort((a, b) => {
+              const aScore = (a.subscription?.plan === 'pro' ? 2 : 0) + (a.boostPin?.active ? 1 : 0)
+              const bScore = (b.subscription?.plan === 'pro' ? 2 : 0) + (b.boostPin?.active ? 1 : 0)
+              return bScore - aScore
+            }).map(vendor => (
+              <button key={vendor.id} type="button"
+                style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: 12,
+                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)',
+                  cursor: 'pointer', textAlign: 'left', transition: 'all 150ms ease', color: 'inherit', width: '100%', font: 'inherit'
+                }}
+                onClick={() => onVendorClick(vendor.id)}
+              >
+                <div style={{ minWidth: 0 }}>
+                  <div style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.9rem' }}>
+                    {vendor.name}
+                    {vendor.subscription?.plan === 'pro' && <span className="verified-badge">{t('modal.verified')}</span>}
+                  </div>
+                  <div style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', marginTop: 2 }}>
+                    {vendor.category} · {vendor.commune}
+                    {vendor.boostPin?.active && <span className="boost-indicator">{t('modal.boost')}</span>}
+                    {vendor.delivery?.enabled && <span className="delivery-indicator">{t('modal.delivery')}</span>}
+                  </div>
+                </div>
+                <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                  {vendor.products.length} {t('modal.vendorProducts')}
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: 12 }}>
+            {allProducts.length === 0 && (
+              <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 24, gridColumn: 'span 2' }}>{t('modal.noProducts')}</p>
+            )}
+            {allProducts.map(product => (
+              <div key={product.id}
+                style={{
+                  background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)',
+                  overflow: 'hidden', display: 'flex', flexDirection: 'column'
+                }}
+              >
+                <img src={product.image || ''} alt={product.title}
+                  style={{ width: '100%', height: 120, objectFit: 'cover', background: 'var(--bg)' }}
+                />
+                <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
+                  <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.85rem' }}>{product.title}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{product.vendorName} · {product.subcategory}</div>
+                  <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>{formatPrice(product.price, currency)}</div>
+                  <div style={{ display: 'flex', gap: 6, marginTop: 'auto', paddingTop: 6 }}>
+                    <button className="btn btn-sm btn-primary" onClick={() => addToCart(product)}>+</button>
+                    <button className="btn btn-sm btn-ghost" onClick={() => onOpenProduct(product)}>{t('modal.view')}</button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   FILTERS MODAL — uses CSS variables
+   ═══════════════════════════════════════════════════════════════ */
+function MarketplaceFiltersModal({
+  onClose, filters, onFiltersChange, vendors,
+  searchQuery, onSearchQueryChange, currency, onCurrencyChange
+}) {
+  const { t } = useTranslation()
+  const provinces = useMemo(() => getProvinceOptions(), [])
+  const communes = useMemo(() => filters.province ? getCommuneOptions(filters.province) : [], [filters.province])
+  const quartiers = useMemo(() => filters.commune ? getQuartierOptions(filters.commune) : [], [filters.commune])
+  const categories = useMemo(() => Array.from(new Set(vendors.map(v => v.category).filter(Boolean))).sort(), [vendors])
+
+  function handleChange(key, value) {
+    onFiltersChange({
+      ...filters,
+      [key]: value,
+      ...(key === 'province' ? { commune: '', quartier: '' } : {}),
+      ...(key === 'commune' ? { quartier: '' } : {})
+    })
+  }
+
+  return (
+    <>
+      <div className="modal-header">
+        <h3>{t('modal.filtersTitle')}</h3>
+        <button className="btn btn-sm btn-ghost" onClick={onClose}>{t('modal.close')}</button>
+      </div>
+      <div className="modal-body">
+        <div className="modal-filters">
+          <div className="filter-group">
+            <label>{t('modal.filterProvince')}</label>
+            <select value={filters.province || ''} onChange={(e) => handleChange('province', e.target.value)}>
+              <option value="">{t('modal.allLabel')}</option>
+              {provinces.map(p => <option key={p} value={p}>{p}</option>)}
+            </select>
+          </div>
+          <div className="filter-group">
+            <label>{t('modal.filterCommune')}</label>
+            <select value={filters.commune || ''} onChange={(e) => handleChange('commune', e.target.value)}>
+              <option value="">{t('modal.allLabel')}</option>
+              {communes.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+          <div className="filter-group">
+            <label>{t('modal.filterQuartier')}</label>
+            <select value={filters.quartier || ''} onChange={(e) => handleChange('quartier', e.target.value)}>
+              <option value="">{t('modal.allLabel')}</option>
+              {quartiers.map(q => <option key={q} value={q}>{q}</option>)}
+            </select>
+          </div>
+          <div className="filter-group">
+            <label>{t('modal.filterCategory')}</label>
+            <select value={filters.category || ''} onChange={(e) => handleChange('category', e.target.value)}>
+              <option value="">{t('modal.allLabel')}</option>
+              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+          </div>
+        </div>
+        <div className="filter-group">
+          <label>{t('modal.currency')}</label>
+          <select value={currency} onChange={(e) => onCurrencyChange(e.target.value)} className="form-select">
+            <option value="$">{t('currency.usd')}</option>
+            <option value="FC">FC</option>
+          </select>
+        </div>
+      </div>
+    </>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   VENDOR SHOP MODAL — uses CSS variables
+   ═══════════════════════════════════════════════════════════════ */
+function VendorShopModal({ vendorId, onClose, vendors, currentUser, reviews, onSaveReview, addToCart, currency, onOpenProduct, isOwner, onManageVendor }) {
+  const { t } = useTranslation()
+  const [reviewForm, setReviewForm] = useState({ name: '', stars: 5, comment: '' })
+
+  const vendor = vendors.find(v => v.id === vendorId)
+  if (!vendor) return null
+
+  const vendorReviews = reviews.filter(r => r.vendorId === vendor.id)
+  const avgRating = vendorReviews.length > 0
+    ? Math.round((vendorReviews.reduce((s, r) => s + r.stars, 0) / vendorReviews.length) * 10) / 10
+    : vendor.rating || 0
+
+  function handleReviewSubmit(e) {
+    e.preventDefault()
+    if (!vendor) return
+    onSaveReview({
+      id: `rev-${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      vendorId: vendor.id,
+      name: reviewForm.name || currentUser?.fullName || 'Client',
+      stars: Number(reviewForm.stars),
+      comment: reviewForm.comment,
+      createdAt: new Date().toISOString()
+    })
+    setReviewForm({ name: '', stars: 5, comment: '' })
+  }
+
+  return (
+    <div className="modal modal-lg" onClick={(e) => e.stopPropagation()}>
+      <div className="modal-header">
+        <div>
+          <h3>{vendor.name}</h3>
+          <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 2 }}>{vendor.commune} · {vendor.category}</div>
+        </div>
+        <button className="btn btn-sm btn-ghost" onClick={onClose}>{t('modal.close')}</button>
+      </div>
+      <div className="modal-body">
+        <div className="modal-grid">
+          <div>
+            <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{vendor.description}</p>
+            <div style={{ marginTop: 12, fontWeight: 700, color: 'var(--text)' }}>{t('modal.rating')} {avgRating} ★</div>
+            {isOwner && (
+              <button className="btn btn-sm" style={{ marginTop: 12 }} onClick={() => { onManageVendor(vendor.id); onClose() }}>
+                {t('modal.manageStore')}
+              </button>
+            )}
+          </div>
+          <div>
+            <div style={{ fontWeight: 700, marginBottom: 10, color: 'var(--text)' }}>{t('modal.products')}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, maxHeight: 260, overflowY: 'auto', paddingRight: 4 }}>
+              {vendor.products?.map(product => (
+                <div key={product.id} style={{
+                  display: 'flex', gap: 10, padding: 10,
+                  background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)'
+                }}>
+                  <img src={product.image || ''} alt={product.title}
+                    style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', background: 'var(--bg)' }}
+                  />
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 600, color: 'var(--text)', fontSize: '0.85rem' }}>{product.title}</div>
+                    <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem' }}>{product.subcategory}</div>
+                    <div style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem', marginTop: 4 }}>{formatPrice(product.price, currency)}</div>
+                    <div style={{ marginTop: 6 }}>
+                      <button className="btn btn-sm btn-primary" onClick={() => addToCart({ ...product, vendorId: vendor.id, vendorName: vendor.name })}>+</button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div style={{ fontWeight: 700, marginBottom: 10, color: 'var(--text)' }}>{t('modal.reviews')}</div>
+          {vendorReviews.length === 0 ? (
+            <p style={{ color: 'var(--text-muted)' }}>{t('modal.noReviews')}</p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+              {vendorReviews.map(review => (
+                <div key={review.id} style={{
+                  padding: 12, background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)'
+                }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 6 }}>
+                    <strong style={{ color: 'var(--text)', fontSize: '0.85rem' }}>{review.name}</strong>
+                    <span style={{ color: '#f59e0b', fontWeight: 600 }}>{review.stars} ★</span>
+                  </div>
+                  <p style={{ margin: 0, color: 'var(--text-secondary)', fontSize: '0.85rem' }}>{review.comment}</p>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: 6 }}>
+                    {new Date(review.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {currentUser?.role !== 'vendor' && (
+          <form onSubmit={handleReviewSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div style={{ fontWeight: 700, color: 'var(--text)' }}>{t('modal.addReview')}</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>{t('modal.name')}</label>
+              <input value={reviewForm.name} onChange={(e) => setReviewForm(p => ({ ...p, name: e.target.value }))} placeholder={t('modal.name')}
+                className="form-input"
+              />
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>{t('modal.ratingLabel')}</label>
+              <select value={reviewForm.stars} onChange={(e) => setReviewForm(p => ({ ...p, stars: e.target.value }))} className="form-select">
+                {[5, 4, 3, 2, 1].map(s => <option key={s} value={s}>{s} ★</option>)}
+              </select>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>{t('modal.comment')}</label>
+              <textarea value={reviewForm.comment} onChange={(e) => setReviewForm(p => ({ ...p, comment: e.target.value }))} rows={3}
+                className="form-input" style={{ resize: 'vertical' }}
+              />
+            </div>
+            <button type="submit" className="btn btn-sm btn-primary" style={{ alignSelf: 'flex-start' }}>{t('modal.submit')}</button>
+          </form>
+        )}
+      </div>
+    </div>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PRODUCT DETAIL MODAL — uses CSS variables
+   ═══════════════════════════════════════════════════════════════ */
+function ProductDetailModal({ product, onClose, addToCart, currency }) {
+  const { t } = useTranslation()
+  return (
+    <>
+      <div className="modal-header">
+        <h3>{product.title}</h3>
+        <button className="btn btn-sm btn-ghost" onClick={onClose}>{t('modal.close')}</button>
+      </div>
+      <div className="modal-body">
+        <img src={product.image || ''} alt={product.title}
+          style={{ width: '100%', height: 220, objectFit: 'cover', borderRadius: 16, background: 'var(--bg)' }}
+        />
+        <div style={{ fontWeight: 700, fontSize: '1.2rem', color: 'var(--primary)' }}>{formatPrice(product.price, currency)}</div>
+        <p style={{ color: 'var(--text-secondary)', lineHeight: 1.6 }}>{product.description}</p>
+        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{product.vendorName} · {product.subcategory}</div>
+        <button className="btn btn-sm btn-primary" style={{ alignSelf: 'flex-start', marginTop: 4 }} onClick={() => addToCart(product)}>{t('modal.addToCart')}</button>
+      </div>
+    </>
+  )
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CART MODAL — uses CSS variables
+   ═══════════════════════════════════════════════════════════════ */
+function CartModal({ cart, cartCount, onClose, onRemove, onCheckout, currency }) {
+  const { t } = useTranslation()
+  const items = Object.values(cart)
+  const total = items.reduce((sum, item) => sum + item.product.price * item.qty, 0)
+  return (
+    <>
+      <div className="modal-header">
+        <h3>{t('cart.title')}</h3>
+        <button className="btn btn-sm btn-ghost" onClick={onClose}>{t('modal.close')}</button>
+      </div>
+      <div className="modal-body">
+        {cartCount === 0 ? (
+          <p style={{ color: 'var(--text-muted)', textAlign: 'center', padding: 20 }}>{t('cart.empty')}</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {items.map(item => (
+              <div key={item.product.id} style={{
+                display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, padding: 12,
+                background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)'
+              }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: 'var(--text)' }}>{item.product.title}</div>
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>{item.product.vendorName}</div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, textAlign: 'right' }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text)' }}>{item.qty} × {formatPrice(item.product.price, currency)}</span>
+                  <button className="btn btn-sm btn-ghost" onClick={() => onRemove(item.product.id)}>{t('cart.remove')}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {cartCount > 0 && (
+          <>
+            <div style={{
+              display: 'flex', justifyContent: 'space-between', padding: '14px 0',
+              fontWeight: 700, fontSize: '1.1rem', color: 'var(--text)',
+              borderTop: '1px solid var(--border)', marginTop: 8
+            }}>
+              <span>{t('cart.total')}</span>
+              <span>{formatPrice(total, currency)}</span>
+            </div>
+            <button className="btn btn-primary" style={{ alignSelf: 'flex-start' }} onClick={onCheckout}>{t('cart.simulate')}</button>
+          </>
+        )}
+      </div>
+    </>
+  )
+}
+>>>>>>> e66c1ea (Update app)

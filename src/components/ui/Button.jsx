@@ -1,5 +1,6 @@
 import React from 'react'
 
+<<<<<<< HEAD
 export default function Button({ children, onClick, variant = 'primary', disabled = false, type = 'button', fullWidth = false, size = 'medium' }) {
   const variants = {
     primary: {
@@ -42,12 +43,40 @@ export default function Button({ children, onClick, variant = 'primary', disable
 
   const variantStyle = variants[variant] || variants.primary
   const sizeStyle = sizes[size] || sizes.medium
+=======
+/**
+ * Button — Design system button component
+ * Variants: primary (blue/rounded), secondary (white/thin border), danger (red), ghost
+ * Sizes: sm, md (default), lg
+ */
+export default function Button({
+  children,
+  onClick,
+  variant = 'primary',
+  disabled = false,
+  type = 'button',
+  fullWidth = false,
+  size = 'md',
+  style: extraStyle = {},
+  className = ''
+}) {
+  const classes = [
+    'btn',
+    `btn-${variant}`,
+    size !== 'md' ? `btn-${size}` : '',
+    fullWidth ? 'btn-full' : '',
+    className
+  ]
+    .filter(Boolean)
+    .join(' ')
+>>>>>>> e66c1ea (Update app)
 
   return (
     <button
       type={type}
       onClick={onClick}
       disabled={disabled}
+<<<<<<< HEAD
       style={{
         ...sizeStyle,
         width: fullWidth ? '100%' : 'auto',
@@ -70,6 +99,10 @@ export default function Button({ children, onClick, variant = 'primary', disable
           e.target.style.backgroundColor = variantStyle.backgroundColor
         }
       }}
+=======
+      className={classes}
+      style={extraStyle}
+>>>>>>> e66c1ea (Update app)
     >
       {children}
     </button>

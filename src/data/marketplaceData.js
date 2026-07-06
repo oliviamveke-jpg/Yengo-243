@@ -14,6 +14,10 @@ export const vendors = [
     name: "Gombe Tech Market",
     province: "Kinshasa",
     commune: "Gombe",
+<<<<<<< HEAD
+=======
+    locationId: "kinshasa-gombe",
+>>>>>>> e66c1ea (Update app)
     ville: "Kinshasa Ville",
     quartier: "Quartier Industriel",
     coords: [-4.319, 15.316],
@@ -22,6 +26,11 @@ export const vendors = [
     description: "Smartphones, accessoires et solutions électroniques pour la vie quotidienne.",
     profileImage: null,
     ...vendorDefaults(),
+<<<<<<< HEAD
+=======
+    phoneNumber: "+243812345678",
+    whatsappNumber: "+243812345678",
+>>>>>>> e66c1ea (Update app)
     products: [
       {
         id: "v-gombe-tech-phone-a15",
@@ -61,6 +70,10 @@ export const vendors = [
     name: "Avenue Mode Gombe",
     province: "Kinshasa",
     commune: "Gombe",
+<<<<<<< HEAD
+=======
+    locationId: "kinshasa-gombe",
+>>>>>>> e66c1ea (Update app)
     ville: "Kinshasa Ville",
     quartier: "Les Avocats",
     coords: [-4.322, 15.317],
@@ -69,6 +82,11 @@ export const vendors = [
     description: "Collection moderne et confortable pour homme et femme.",
     profileImage: null,
     ...vendorDefaults(),
+<<<<<<< HEAD
+=======
+    phoneNumber: "+243897654321",
+    whatsappNumber: "+243897654321",
+>>>>>>> e66c1ea (Update app)
     products: [
       {
         id: "v-gombe-style-shirt-linen",
@@ -108,6 +126,10 @@ export const vendors = [
     name: "Kintambo Fresh",
     province: "Kinshasa",
     commune: "Kintambo",
+<<<<<<< HEAD
+=======
+    locationId: "kinshasa-kintambo",
+>>>>>>> e66c1ea (Update app)
     ville: "Kinshasa Ville",
     quartier: "Kintambo Magasin",
     coords: [-4.309, 15.301],
@@ -116,6 +138,11 @@ export const vendors = [
     description: "Produits alimentaires frais et épicerie locale en livraison rapide.",
     profileImage: null,
     ...vendorDefaults(),
+<<<<<<< HEAD
+=======
+    phoneNumber: "+243812345001",
+    whatsappNumber: "+243812345001",
+>>>>>>> e66c1ea (Update app)
     products: [
       {
         id: "v-kintambo-fresh-rice-5kg",
@@ -155,6 +182,10 @@ export const vendors = [
     name: "Maison Lemba",
     province: "Kinshasa",
     commune: "Lemba",
+<<<<<<< HEAD
+=======
+    locationId: "kinshasa-lemba",
+>>>>>>> e66c1ea (Update app)
     ville: "Kinshasa Ville",
     quartier: "Quartier Socimat",
     coords: [-4.331, 15.351],
@@ -163,6 +194,11 @@ export const vendors = [
     description: "Solutions pour la maison: éclairage, literie et électroménager.",
     profileImage: null,
     ...vendorDefaults(),
+<<<<<<< HEAD
+=======
+    phoneNumber: "+243812345789",
+    whatsappNumber: "+243812345789",
+>>>>>>> e66c1ea (Update app)
     products: [
       {
         id: "v-lemba-home-led-lamp",
@@ -202,6 +238,10 @@ export const vendors = [
     name: "Kalamu Beauty Corner",
     province: "Kinshasa",
     commune: "Kalamu",
+<<<<<<< HEAD
+=======
+    locationId: "kinshasa-kalamu",
+>>>>>>> e66c1ea (Update app)
     ville: "Kinshasa Ville",
     quartier: "Ngiri-Ngiri",
     coords: [-4.3338, 15.2996],
@@ -210,6 +250,11 @@ export const vendors = [
     description: "Soins et parfums locaux pour beauté du visage et cheveux.",
     profileImage: null,
     ...vendorDefaults(),
+<<<<<<< HEAD
+=======
+    phoneNumber: "+243812345002",
+    whatsappNumber: "+243812345002",
+>>>>>>> e66c1ea (Update app)
     products: [
       {
         id: "v-kalamu-beauty-cream-day",
@@ -249,6 +294,10 @@ export const vendors = [
     name: "Limete Pro Tools",
     province: "Kinshasa",
     commune: "Limete",
+<<<<<<< HEAD
+=======
+    locationId: "kinshasa-limete",
+>>>>>>> e66c1ea (Update app)
     ville: "Kinshasa Ville",
     quartier: "Limete-Centre",
     coords: [-4.3313, 15.368],
@@ -257,6 +306,11 @@ export const vendors = [
     description: "Outils robustes pour bricolage et petites réparations.",
     profileImage: null,
     ...vendorDefaults(),
+<<<<<<< HEAD
+=======
+    phoneNumber: "+243812345003",
+    whatsappNumber: "+243812345003",
+>>>>>>> e66c1ea (Update app)
     products: [
       {
         id: "v-limete-tools-drill-basic",

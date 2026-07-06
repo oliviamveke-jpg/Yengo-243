@@ -1,5 +1,12 @@
 import React, { useEffect } from 'react'
 
+<<<<<<< HEAD
+=======
+/**
+ * Modal — Design system modal component
+ * Uses CSS classes from styles.css for consistent styling
+ */
+>>>>>>> e66c1ea (Update app)
 export default function Modal({ isOpen, onClose, title, children, size = 'medium' }) {
   useEffect(() => {
     if (isOpen) {
@@ -14,6 +21,7 @@ export default function Modal({ isOpen, onClose, title, children, size = 'medium
 
   if (!isOpen) return null
 
+<<<<<<< HEAD
   const handleBackdropClick = (e) => {
     if (e.target === e.currentTarget) {
       onClose()
@@ -104,6 +112,22 @@ export default function Modal({ isOpen, onClose, title, children, size = 'medium
           </div>
         )}
         <div className="modal-body" style={{ padding: '24px' }}>
+=======
+  const sizeClass = size === 'large' ? ' modal-lg' : size === 'xlarge' ? ' modal-lg' : ''
+
+  return (
+    <div className="modal-overlay" onClick={onClose}>
+      <div className={`modal${sizeClass}`} onClick={(e) => e.stopPropagation()}>
+        {title && (
+          <div className="modal-header">
+            <h3>{title}</h3>
+            <button className="btn btn-sm btn-ghost" onClick={onClose}>
+              ✕
+            </button>
+          </div>
+        )}
+        <div className="modal-body">
+>>>>>>> e66c1ea (Update app)
           {children}
         </div>
       </div>
