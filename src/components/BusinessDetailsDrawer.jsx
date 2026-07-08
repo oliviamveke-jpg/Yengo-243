@@ -21,9 +21,10 @@ function esc(str) {
 }
 
 function getVendorImage(vendor) {
-  const productImage = vendor.products?.find(p => p.image)?.image
+  const productImage = vendor.products?.find(p => p.coverImage || p.images?.[0] || p.image)
+  const productSrc = productImage ? (productImage.coverImage || productImage.images?.[0] || productImage.image) : null
   if (vendor.profileImage) return vendor.profileImage
-  if (productImage) return productImage
+  if (productSrc) return productSrc
   const title = esc(vendor.name || 'Yengo+243')
   const category = esc(vendor.category || 'Boutique')
   const color = getCategoryColor(vendor.category)
@@ -231,6 +232,21 @@ export default function BusinessDetailsDrawer({
                     {getVendorLocationDisplay(vendor)} · {getLocationById(vendor.locationId)?.province || vendor.province}
                   </span>
                 </div>
+
+                {/* ───── COORDINATES DISPLAY ───── */}
+                {(() => {
+                  const lat = vendor.latitude || (vendor.coords ? vendor.coords[0] : null)
+                  const lng = vendor.longitude || (vendor.coords ? vendor.coords[1] : null)
+                  if (!lat || !lng) return null
+                  return (
+                    <div className="business-drawer-coords">
+                      <span className="business-drawer-coords-label">GPS:</span>
+                      <span className="business-drawer-coords-value">
+                        {Number(lat).toFixed(6)}, {Number(lng).toFixed(6)}
+                      </span>
+                    </div>
+                  )
+                })()}
               </div>
 
               {/* ═══════════════════════════════════════════════
@@ -332,7 +348,7 @@ export default function BusinessDetailsDrawer({
                     {products.slice(0, 6).map(product => (
                       <div key={product.id} className="business-drawer-product">
                         <img
-                          src={product.image || ''}
+                          src={product.coverImage || product.images?.[0] || product.image || ''}
                           alt={product.title}
                           className="business-drawer-product-img"
                           onError={(e) => {

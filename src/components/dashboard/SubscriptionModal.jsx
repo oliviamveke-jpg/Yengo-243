@@ -39,6 +39,7 @@ import {
   verifyBankTransferPayment
 } from '../../services/paymentService'
 import { useTranslation } from '../../i18n/I18nProvider'
+import { validateDRCPhoneDetailed, normalizePhone } from '../../utils/phoneUtils'
 
 const PLANS = [
   { id: 'free', nameKey: 'sub.free', price: 0, duration: null, benefitsKeys: ['dash.tenListings', 'dash.standardVisibility', 'dash.basicAnalytics', 'dash.emailSupport'] },
@@ -638,7 +639,37 @@ Thank you for your business!
                 <label style={{ color: 'var(--text-muted)', display: 'grid', gap: 8 }}>{t('payment.selectProvider')}<select value={paymentDetails.provider} onChange={e => updatePaymentDetail('provider', e.target.value)} disabled={isProcessing} className="form-select">
                   <option value="mpesa">M-Pesa</option><option value="airtel">Airtel Money</option><option value="orange">Orange Money</option>
                 </select></label>
-                <label style={{ color: 'var(--text-muted)', display: 'grid', gap: 8 }}>{t('payment.phoneNumber')}<input value={paymentDetails.phoneNumber} onChange={e => { updatePaymentDetail('phoneNumber', e.target.value); setCheckoutStep('details') }} disabled={isProcessing} placeholder={t('payment.phoneHint')} className="form-input" /></label>
+                <label style={{ color: 'var(--text-muted)', display: 'grid', gap: 8 }}>{t('payment.phoneNumber')}
+                  <input
+                    value={paymentDetails.phoneNumber}
+                    onChange={e => {
+                      const raw = e.target.value
+                      updatePaymentDetail('phoneNumber', raw)
+                      setCheckoutStep('details')
+                      setPaymentError('')
+                    }}
+                    onBlur={e => {
+                      const val = e.target.value
+                      if (val.trim()) {
+                        const result = validateDRCPhoneDetailed(val)
+                        if (!result.valid) {
+                          setPaymentError(t('sub.phoneValidationError', result.error || 'Invalid DRC phone number'))
+                        } else {
+                          // Normalize to E.164 on blur
+                          updatePaymentDetail('phoneNumber', normalizePhone(val))
+                        }
+                      }
+                    }}
+                    disabled={isProcessing}
+                    placeholder="+243 81 234 5678"
+                    className="form-input"
+                  />
+                  {!paymentError && (
+                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: -4 }}>
+                      Examples: +243985253499, +243 985 253 499, or 0985253499
+                    </span>
+                  )}
+                </label>
               </div>
             )}
             {paymentMethod === PAYMENT_METHODS.CREDIT_CARD && (

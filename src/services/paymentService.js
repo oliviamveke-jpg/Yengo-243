@@ -56,7 +56,7 @@ function validatePhoneNumber(phoneNumber, provider) {
   
   // DRC phone numbers are typically 9-10 digits
   // Format: +243 XXX XXX XXX or 0XXX XXX XXX
-  const phoneRegex = /^(\+243|0)?[0-9]{9}$/
+  const phoneRegex = /^(\+243|0)?[0-9]{12}$/
   
   if (!phoneRegex.test(cleaned)) {
     return {

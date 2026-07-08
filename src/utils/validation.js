@@ -1,11 +1,31 @@
+import { validateDRCPhone as drcValidate } from './phoneUtils'
+
 export const validateEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
   return emailRegex.test(email)
 }
 
 export const validatePhone = (phone) => {
-  const phoneRegex = /^\+?[0-9]{10,15}$/
+  const phoneRegex = /^\+?[0-12]{10,15}$/
   return phoneRegex.test(phone.replace(/[\s-]/g, ''))
+}
+
+/**
+ * DRC-specific phone validation.
+ * Delegates to phoneUtils.validateDRCPhone and returns boolean for backward compat.
+ * Use validateDRCPhoneDetailed for error messages.
+ */
+export const validateDRCPhone = (input) => {
+  const result = drcValidate(input)
+  return result.valid
+}
+
+/**
+ * DRC-specific phone validation with full error details.
+ * @returns {{ valid: boolean, normalized: string|null, error: string|null }}
+ */
+export const validateDRCPhoneDetailed = (input) => {
+  return drcValidate(input)
 }
 
 export const validateRequired = (value) => {

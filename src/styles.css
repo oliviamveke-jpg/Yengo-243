@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@600;700;800;900&display=swap');
 @import './styles/profile-dropdown.css';
 <<<<<<< HEAD
 html,body,#root{height:100%;margin:0;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0a0e27;color:#e2e8f0}
@@ -590,20 +591,17 @@ a { color: inherit; text-decoration: none; }
   z-index: 1010;
   display: flex;
   align-items: center;
-  height: 48px;
-  padding: 0 20px;
+  height: 56px;
+  padding: 0 16px;
   background: #ffffff;
   border-radius: 9999px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
-  font-size: 1.1rem;
-  font-weight: 800;
-  color: var(--text);
-  letter-spacing: -0.3px;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.12);
   white-space: nowrap;
 }
 
-.floating-logo-pill span {
-  color: var(--primary);
+.floating-logo-pill svg {
+  height: 44px;
+  width: auto;
 }
 
 /* ═══════ FLOATING USER MENU (top-left) ═══════ */
@@ -3131,6 +3129,363 @@ a { color: inherit; text-decoration: none; }
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   LOCATION PICKER COMPONENTS — Mini-map + Cascading Selects
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ─── Location Section ─── */
+.location-section {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 16px 0;
+}
+
+.location-section-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.location-section-desc {
+  margin: -8px 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* ─── Cascading spinner ─── */
+.cascade-spinner {
+  position: absolute;
+  right: 36px;
+  top: 32px;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Add quartier button ─── */
+.location-add-btn {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-weight: 600;
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.location-add-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 12px;
+  background: var(--bg-secondary, #f8fafc);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-top: 4px;
+}
+
+.location-add-label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.location-add-row {
+  display: flex;
+  gap: 8px;
+}
+
+.location-add-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.85rem;
+  outline: none;
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ─── Map wrapper ─── */
+.location-map-wrapper {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.location-map-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.location-required {
+  color: #ef4444;
+  margin-left: 2px;
+}
+
+.location-success {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: #16a34a;
+  font-weight: 600;
+  margin: 2px 0 0;
+}
+
+.location-gps-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--bg);
+  color: var(--text-muted);
+  border: 1px dashed var(--border);
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: default;
+}
+
+/* ─── Location Picker Map ─── */
+.loc-picker-wrapper {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 2px solid var(--border);
+  transition: border-color 150ms ease;
+}
+
+.loc-picker-wrapper:hover,
+.loc-picker-wrapper:focus-within {
+  border-color: var(--primary);
+}
+
+.loc-picker-map {
+  z-index: 1;
+  border-radius: 0;
+}
+
+/* Fullscreen mode */
+.loc-picker-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 5000;
+  border: none;
+  border-radius: 0;
+  background: var(--surface);
+}
+
+.loc-picker-fullscreen .loc-picker-map {
+  height: 100% !important;
+}
+
+/* ─── Coordinate display bar ─── */
+.loc-picker-coords {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.5px;
+}
+
+.loc-picker-source {
+  margin-left: auto;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  font-family: inherit;
+}
+
+/* ─── Control buttons ─── */
+.loc-picker-controls {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.loc-picker-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.95);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 150ms ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  padding: 0;
+}
+
+.loc-picker-btn:hover {
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.loc-picker-btn:active {
+  transform: scale(0.95);
+}
+
+.loc-picker-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ─── Spinner inside button ─── */
+.loc-picker-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--primary);
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+}
+
+/* ─── Location picker hint ─── */
+.loc-picker-hint {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  padding: 6px 14px;
+  background: rgba(255, 255, 255, 0.92);
+  -webkit-backdrop-filter: blur(4px);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--border);
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+/* ─── Map loading state ─── */
+.loc-picker-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  height: 200px;
+  background: var(--bg);
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.loc-picker-loading .loc-picker-spinner {
+  width: 24px;
+  height: 24px;
+  border-width: 3px;
+}
+
+/* ─── Location Editor ─── */
+.location-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.location-editor-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.location-editor-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+/* ─── Dark mode overrides ─── */
+[data-theme="dark"] .location-add-form {
+  background: var(--surface);
+}
+
+[data-theme="dark"] .loc-picker-coords {
+  background: rgba(30, 41, 59, 0.95);
+}
+
+[data-theme="dark"] .loc-picker-btn {
+  background: rgba(30, 41, 59, 0.95);
+}
+
+[data-theme="dark"] .loc-picker-hint {
+  background: rgba(30, 41, 59, 0.92);
+}
+
+[data-theme="dark"] .loc-picker-loading {
+  background: var(--surface);
+}
+
+[data-theme="dark"] .loc-picker-wrapper {
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .loc-picker-fullscreen {
+  background: var(--surface);
+}
+
+/* ═══════════════════════════════════════════════════════════════
    MODERN MARKER SYSTEM — Yengo+243
    ═══════════════════════════════════════════════════════════════ */
 
@@ -3968,6 +4323,34 @@ a { color: inherit; text-decoration: none; }
   flex-shrink: 0;
   opacity: 0.5;
   margin-top: 2px;
+}
+
+/* ─── Coordinates display in business drawer ─── */
+.business-drawer-coords {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  padding: 6px 10px;
+  background: var(--bg, #f5f7fa);
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-family: 'Courier New', monospace;
+}
+
+.business-drawer-coords-label {
+  font-weight: 700;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 0.65rem;
+  font-family: inherit;
+}
+
+.business-drawer-coords-value {
+  color: var(--text-secondary, #64748b);
+  font-weight: 600;
+  letter-spacing: 0.5px;
 }
 
 /* ═══════ DRAWER SELLER PANEL ═══════ */
@@ -4905,6 +5288,173 @@ a { color: inherit; text-decoration: none; }
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
+
+.cp-phone-input-wrapper.cp-phone-error {
+  border-color: #ef4444;
+}
+
+.cp-phone-input-wrapper.cp-phone-error:focus-within {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+
+.cp-form-hint-error {
+  color: #ef4444 !important;
+  font-weight: 600 !important;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   PHONE INPUT — reusable country-selector phone field
+   ═══════════════════════════════════════════════════════════════ */
+.form-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+}
+
+.phone-country-selector {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.phone-country-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 100%;
+  padding: 0 8px 0 12px;
+  background: var(--bg);
+  border: none;
+  border-right: 1px solid var(--border);
+  border-radius: 12px 0 0 12px;
+  cursor: pointer;
+  color: var(--text);
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: background 150ms ease;
+  white-space: nowrap;
+  min-height: 44px;
+}
+
+.phone-country-btn:hover {
+  background: var(--surface);
+}
+
+.phone-country-flag {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.phone-country-code {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.phone-country-arrow {
+  font-size: 0.6rem;
+  color: var(--text-muted);
+  transition: transform 150ms ease;
+}
+
+.phone-country-arrow.open {
+  transform: rotate(180deg);
+}
+
+.phone-country-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 100;
+  min-width: 180px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  padding: 4px;
+  animation: overlayIn 100ms ease-out;
+}
+
+.phone-country-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 12px;
+  background: none;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: background 100ms ease;
+  text-align: left;
+}
+
+.phone-country-option:hover {
+  background: var(--bg);
+}
+
+.phone-country-option.active {
+  background: rgba(37, 99, 235, 0.08);
+  font-weight: 700;
+}
+
+.phone-country-option .phone-country-flag {
+  font-size: 1.1rem;
+  width: 24px;
+  text-align: center;
+}
+
+.phone-country-name {
+  flex: 1;
+}
+
+.phone-country-code-option {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+}
+
+.phone-input {
+  border-radius: 12px;
+}
+
+.phone-input-with-country {
+  border-radius: 0 12px 12px 0;
+}
+
+.form-helper-text {
+  margin: 2px 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Dark mode for phone input */
+[data-theme="dark"] .phone-country-btn {
+  background: var(--surface);
+  border-right-color: var(--border);
+}
+
+[data-theme="dark"] .phone-country-btn:hover {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .phone-country-dropdown {
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+[data-theme="dark"] .phone-country-option:hover {
+  background: var(--bg);
+}
+
+[data-theme="dark"] .phone-country-option.active {
+  background: rgba(59, 130, 246, 0.15);
+}
+
+/* ═══════ END PHONE INPUT ═══════ */
 
 .cp-phone-input-wrapper {
   display: flex;

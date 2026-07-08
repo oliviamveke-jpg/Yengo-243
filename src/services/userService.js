@@ -88,5 +88,32 @@ export const userService = {
     }
 
     return updatedUser
+  },
+
+  /**
+   * Permanently delete the user account from both the users array
+   * and the accounts array. This is part of account deletion step 3-4.
+   * Returns true if successful, false otherwise.
+   */
+  deleteAccount(userId) {
+    if (!userId) return false
+
+    // Remove from users array
+    const users = this.getUsers()
+    const filteredUsers = users.filter(u => u.id !== userId)
+    this.setUsers(filteredUsers)
+
+    // Remove from accounts array
+    const accounts = this.getAccounts()
+    const filteredAccounts = accounts.filter(a => a.id !== userId)
+    this.setAccounts(filteredAccounts)
+
+    // Clear current user if it's the deleted one
+    const currentUser = this.getCurrentUser()
+    if (currentUser?.id === userId) {
+      this.clearCurrentUser()
+    }
+
+    return true
   }
 }

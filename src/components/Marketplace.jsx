@@ -395,7 +395,7 @@ export default function Marketplace({
             <div className="product-grid-brutal">
               {filteredProducts.map(product => (
                 <div key={product.id} className="product-card-brutal">
-                  <img src={product.image || productImage(product.title, product.category)} alt={product.title} />
+                  <img src={product.coverImage || product.images?.[0] || product.image || productImage(product.title, product.category)} alt={product.title} />
                   <div className="product-info">
                     <div className="product-title">{product.title}</div>
                     <div className="product-meta">{product.vendorName} · {product.subcategory}</div>
@@ -507,7 +507,7 @@ export default function Marketplace({
                   <div className="product-grid-brutal" style={{ maxHeight: 300, overflowY: 'auto' }}>
                     {selectedShopVendor.products.map(product => (
                       <div key={product.id} className="product-card-brutal">
-                        <img src={product.image || productImage(product.title, product.category)} alt={product.title} />
+                        <img src={product.coverImage || product.images?.[0] || product.image || productImage(product.title, product.category)} alt={product.title} />
                         <div className="product-info">
                           <div className="product-title">{product.title}</div>
                           <div className="product-meta">{product.subcategory}</div>
@@ -635,7 +635,7 @@ export default function Marketplace({
             </div>
             <div className="modal-brutal-body">
               <div className="product-card-brutal" style={{ flexDirection: 'column' }}>
-                <img src={activeProduct.image || productImage(activeProduct.title, activeProduct.category)} alt={activeProduct.title} style={{ width: '100%', height: 200 }} />
+                <img src={activeProduct.coverImage || activeProduct.images?.[0] || activeProduct.image || productImage(activeProduct.title, activeProduct.category)} alt={activeProduct.title} style={{ width: '100%', height: 200 }} />
                 <div className="product-info">
                   <div className="product-price">{formatPrice(activeProduct.price, currency)}</div>
                   <p style={{ color: '#cbd5e1', fontSize: '0.9rem', margin: '8px 0' }}>{activeProduct.description}</p>

@@ -98,28 +98,26 @@ export default function ProfileDropdown({ user, onLogout, onNavigate, viewMode, 
 
   /**
    * Menu item descriptors: { id, icon, labelKey, action }
-   * The `action` callback is called with { user, onNavigate, viewMode, setViewMode }
-   * so the dropdown doesn't need to know about the broader app.
+   * Spec-defined menus:
+   * - BUYER:  My Profile, Favorites, Orders, Notifications, Language, Help, Logout
+   * - VENDEUR: My Profile, My Store, Orders, Notifications, Language, Help, Logout
+   * - ADMIN:  Dashboard, Logout
    */
   const buyerMenuItems = [
     { id: 'profile',         icon: User,       labelKey: 'user.myProfile' },
-    { id: 'accountSettings', icon: Settings,    labelKey: 'user.accountSettings' },
     { id: 'favorites',       icon: Heart,       labelKey: 'user.favorites' },
     { id: 'orders',          icon: ShoppingBag, labelKey: 'user.orders' },
-    { id: 'savedAddresses',  icon: MapPin,      labelKey: 'user.savedAddresses' },
-    { id: 'myReviews',       icon: Star,        labelKey: 'user.myReviews' },
     { id: 'notifications',   icon: Bell,        labelKey: 'user.notifications' },
+    { id: 'language',        icon: BarChart3,   labelKey: 'user.language' },
     { id: 'help',            icon: HelpCircle,  labelKey: 'user.help' },
   ]
 
   const vendorMenuItems = [
-    { id: 'dashboard',       icon: LayoutDashboard, labelKey: 'user.dashboard' },
-    { id: 'myStore',         icon: Store,           labelKey: 'user.myStore' },
-    { id: 'products',        icon: Package,         labelKey: 'user.products' },
-    { id: 'analytics',       icon: BarChart3,       labelKey: 'user.analytics' },
     { id: 'profile',         icon: User,            labelKey: 'user.myProfile' },
-    { id: 'settings',        icon: Settings,        labelKey: 'user.accountSettings' },
+    { id: 'myStore',         icon: Store,           labelKey: 'user.myStore' },
+    { id: 'orders',          icon: ShoppingBag,     labelKey: 'user.orders' },
     { id: 'notifications',   icon: Bell,            labelKey: 'user.notifications' },
+    { id: 'language',        icon: BarChart3,       labelKey: 'user.language' },
     { id: 'help',            icon: HelpCircle,      labelKey: 'user.help' },
   ]
 
@@ -148,12 +146,18 @@ export default function ProfileDropdown({ user, onLogout, onNavigate, viewMode, 
           onOpenProfile()
         }
         break
+      case 'language':
+        // Open language settings
+        setViewMode('settingsPage')
+        break
       case 'settings':
       case 'accountSettings':
         setViewMode('settingsPage')
         break
       case 'dashboard':
       case 'myStore':
+        setViewMode('dashboard')
+        break
       case 'products':
       case 'analytics':
         setViewMode('dashboard')

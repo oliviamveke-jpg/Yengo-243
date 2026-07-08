@@ -16,6 +16,56 @@ const USER_AGENT = 'Yengo-React-App/1.0';
 const geocodingCache = new Map();
 
 /**
+ * Reverse geocode coordinates into an address using Nominatim API.
+ * @param {number} lat - Latitude
+ * @param {number} lng - Longitude
+ * @returns {Promise<Object|null>} Address object with address details, or null on failure
+ */
+async function reverseGeocode(lat, lng) {
+  const cacheKey = `reverse-${lat}-${lng}`;
+  if (geocodingCache.has(cacheKey)) {
+    return geocodingCache.get(cacheKey);
+  }
+
+  try {
+    const params = new URLSearchParams({
+      lat,
+      lon: lng,
+      format: 'json',
+      addressdetails: 1,
+      zoom: 18,
+      namedetails: 1
+    });
+
+    const response = await fetch(
+      'https://nominatim.openstreetmap.org/reverse?' + params,
+      { headers: { 'User-Agent': USER_AGENT } }
+    );
+
+    if (!response.ok) {
+      throw new Error(`Nominatim reverse API error: ${response.status}`);
+    }
+
+    const result = await response.json();
+    if (result && result.lat) {
+      geocodingCache.set(cacheKey, result);
+      return {
+        lat: parseFloat(result.lat),
+        lon: parseFloat(result.lon),
+        displayName: result.display_name || '',
+        address: result.address || {},
+        osmId: result.osm_id,
+        osmType: result.osm_type
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Reverse geocoding error:', error);
+    return null;
+  }
+}
+
+/**
  * Search for a location using Nominatim API
  * @param {string} query - Search query
  * @param {Object} options - Search options
@@ -248,6 +298,7 @@ function importCache(data) {
 }
 
 export const geocodingService = {
+  reverseGeocode,
   searchLocation,
   searchCommune,
   searchQuartier,

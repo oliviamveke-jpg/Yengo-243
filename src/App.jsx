@@ -86,6 +86,7 @@ import BusinessDetailsDrawer from './components/BusinessDetailsDrawer'
 import CartPaymentModal from './components/CartPaymentModal'
 import { ThemeProvider } from './theme/ThemeProvider'
 import { I18nProvider, useTranslation } from './i18n/I18nProvider'
+import { YengoLogo } from './components/ui/YengoLogo'
 import { vendors as seedVendors, seedReviews, sampleUsers } from './data/marketplaceData'
 import { listingService } from './services/listingService'
 import { reviewService } from './services/reviewService'
@@ -1149,6 +1150,10 @@ const [showResultsModal, setShowResultsModal] = useState(false)
 
   const handleAuthRegister = useCallback((user) => {
     setCurrentUser(user)
+    // Reload vendors from localStorage so the newly created vendor record
+    // is immediately available in React state (prevents stale-data bug where
+    // VendorDashboard fails to find the vendor until page refresh).
+    setVendors(migrateVendors(listingService.getVendors(seedVendors)))
     setShowAuthPanel(false)
   }, [])
 
@@ -1182,21 +1187,82 @@ const [showResultsModal, setShowResultsModal] = useState(false)
     }
   }, [])
 
-  const handleDeleteAccount = useCallback(() => {
-    if (!currentUser) return
-    userService.updateUser(currentUser.id, { deleted: true })
-    userService.clearCurrentUser()
-    setCurrentUser(null)
-    storageAdapter.remove(STORAGE_KEYS.sessions)
-    sessionStorage.clear()
-    setViewMode('marketplace')
-  }, [currentUser])
-
-  // ═══ Favorites Management ═══
+  // ═══ Toast helper — defined BEFORE handleDeleteAccount to avoid hoisting issues ═══
   const showFavToast = useCallback((message) => {
     setToast(message)
     setTimeout(() => setToast(null), 3000)
   }, [])
+
+  const handleDeleteAccount = useCallback(() => {
+    if (!currentUser) return
+
+    try {
+      const userId = currentUser.id
+      const userEmail = currentUser.email
+      const isVendor = currentUser.role === 'vendor'
+
+      // Find vendor record if user is a vendor
+      const vendorRecord = isVendor
+        ? vendors.find(v => v.ownerId === userId || v.id === userId)
+        : null
+      const vendorId = vendorRecord?.id
+
+      // ── Step 3+4: Delete auth record + user profile ──
+      // Remove from accounts array, users array, and clear currentUser
+      userService.deleteAccount(userId)
+
+      // ── Step 5: Delete vendor data (if vendor) ──
+      if (vendorId) {
+        // Delete all listings/products
+        listingService.deleteAllListings(vendorId)
+        // Delete analytics
+        listingService.deleteAnalytics(vendorId)
+        // Delete vendor profile
+        listingService.deleteVendorProfile(vendorId)
+        // Delete vendor settings
+        listingService.deleteVendorSettings(vendorId)
+        // Delete notifications for this vendor
+        listingService.deleteVendorByOwnerId(userId)
+        // Delete reviews for this vendor
+        reviewService.deleteReviewsForVendor(vendorId)
+      }
+
+      // ── Step 6: Remove vendor from application state ──
+      if (vendorId) {
+        setVendors(prev => prev.filter(v => v.id !== vendorId && v.ownerId !== userId))
+      }
+
+      // ── Step 7: Remove related data ──
+      // Delete favorites
+      favoritesService.clearUserFavorites(userId)
+      // Delete user's reviews (reviews authored by this user)
+      reviewService.deleteReviewsByUser(userId)
+      // Clear user's orders
+      setOrders(prev => prev.filter(o => o.customerId !== userId))
+      // Clear cart
+      setCart({})
+
+      // ── Step 8: Clear application state ──
+      userService.clearCurrentUser()
+      setCurrentUser(null)
+      setFavorites({})
+
+      // Clear all localStorage/sessionStorage
+      storageAdapter.remove(STORAGE_KEYS.sessions)
+      sessionStorage.clear()
+
+      // ── Step 9: Redirect to home page ──
+      setViewMode('marketplace')
+
+      // ── Show success message ──
+      showFavToast('Your account has been permanently deleted.')
+
+    } catch (error) {
+      // ── Step 10: Error handling — stop process, display error ──
+      console.error('Account deletion failed:', error)
+      showFavToast('Account deletion failed: ' + (error.message || 'Unknown error'))
+    }
+  }, [currentUser, vendors, showFavToast])
 
   const handleToggleFavorite = useCallback((businessId) => {
     if (!currentUser || currentUser.role === 'vendor') return
@@ -1306,7 +1372,7 @@ const [showResultsModal, setShowResultsModal] = useState(false)
             exit={{ opacity: 0, scale: 0.9 }}
             transition={{ duration: 0.2 }}
           >
-            Yengo<span>+243</span>
+            <YengoLogo />
           </motion.div>
         )}
       </AnimatePresence>
@@ -1845,7 +1911,7 @@ const [showResultsModal, setShowResultsModal] = useState(false)
         <div className="dashboard-wrapper">
           <header className="dashboard-header">
             <div className="dashboard-title">
-              <h1>Yengo<span>+243</span> Dashboard</h1>
+              <YengoLogo size="small" />
               <p className="dashboard-subtitle">MARKETPLACE CONTROL CENTER</p>
             </div>
             <div className="header-actions" style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -2117,7 +2183,7 @@ function MarketplaceResultsModal({
                   overflow: 'hidden', display: 'flex', flexDirection: 'column'
                 }}
               >
-                <img src={product.image || ''} alt={product.title}
+                <img src={product.coverImage || product.images?.[0] || product.image || ''} alt={product.title}
                   style={{ width: '100%', height: 120, objectFit: 'cover', background: 'var(--bg)' }}
                 />
                 <div style={{ padding: 10, display: 'flex', flexDirection: 'column', gap: 4, flex: 1 }}>
@@ -2266,7 +2332,7 @@ function VendorShopModal({ vendorId, onClose, vendors, currentUser, reviews, onS
                   display: 'flex', gap: 10, padding: 10,
                   background: 'var(--bg)', border: '1px solid var(--border)', borderRadius: 'var(--radius-xs)'
                 }}>
-                  <img src={product.image || ''} alt={product.title}
+                  <img src={product.coverImage || product.images?.[0] || product.image || ''} alt={product.title}
                     style={{ width: 56, height: 56, borderRadius: 8, objectFit: 'cover', background: 'var(--bg)' }}
                   />
                   <div style={{ flex: 1 }}>

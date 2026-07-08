@@ -47,5 +47,28 @@ export const reviewService = {
 
   getReviewsForVendor(vendorId) {
     return this.getReviews().filter((review) => review.vendorId === vendorId)
+  },
+
+  /**
+   * Delete all reviews for a specific vendor. Used during account deletion.
+   */
+  deleteReviewsForVendor(vendorId) {
+    if (!vendorId) return false
+    const reviews = this.getReviews().filter(r => r.vendorId !== vendorId)
+    this.setReviews(reviews)
+    return true
+  },
+
+  /**
+   * Delete all reviews authored by a specific user (by name or userId).
+   * Used during account deletion.
+   */
+  deleteReviewsByUser(userId) {
+    if (!userId) return false
+    // Reviews don't have a userId field directly, but we can remove reviews
+    // that reference this user by checking the review's customerId or userId
+    const reviews = this.getReviews().filter(r => r.userId !== userId && r.customerId !== userId)
+    this.setReviews(reviews)
+    return true
   }
 }

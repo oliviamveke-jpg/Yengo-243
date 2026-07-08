@@ -49,9 +49,10 @@ export default function SearchResultsPanel({
   }
 
   function getVendorImage(vendor) {
-    const productImage = vendor.products?.find(product => product.image)?.image
+    const productImage = vendor.products?.find(product => product.coverImage || product.images?.[0] || product.image)
+    const productSrc = productImage ? (productImage.coverImage || productImage.images?.[0] || productImage.image) : null
     if (vendor.profileImage) return vendor.profileImage
-    if (productImage) return productImage
+    if (productSrc) return productSrc
     const title = encodeURIComponent(vendor.name || 'Yengo+243')
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="320" height="192" viewBox="0 0 320 192"><rect width="320" height="192" fill="#f1f5f9"/><text x="160" y="100" text-anchor="middle" font-family="Arial" font-size="18" font-weight="700" fill="#64748b">${title}</text></svg>`
     return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`

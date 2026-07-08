@@ -10,25 +10,21 @@ import ProfilePhotoModal from './dashboard/ProfilePhotoModal'
 import { validateEmail, validatePhone, validateRequired, validateUrl, validateImageFile } from '../utils/validation'
 import { listingService } from '../services/listingService'
 import { userService } from '../services/userService'
-import { getProvinceOptions, getCommuneOptions, getQuartierOptions, assignLocationId } from '../utils/locationUtils'
 import { useTranslation } from '../i18n/I18nProvider'
-
-const CATEGORIES = [
-  { value: '', label: '' },
-  { value: 'Electronics & Technology', label: 'Electronics & Technology' },
-  { value: 'Fashion & Clothing', label: 'Fashion & Clothing' },
-  { value: 'Food & Restaurants', label: 'Food & Restaurants' },
-  { value: 'Health & Beauty', label: 'Health & Beauty' },
-  { value: 'Home & Garden', label: 'Home & Garden' },
-  { value: 'Automotive', label: 'Automotive' },
-  { value: 'Education', label: 'Education' },
-  { value: 'Entertainment', label: 'Entertainment' },
-  { value: 'Professional Services', label: 'Professional Services' },
-  { value: 'Real Estate', label: 'Real Estate' },
-  { value: 'Sports & Fitness', label: 'Sports & Fitness' },
-  { value: 'Travel & Tourism', label: 'Travel & Tourism' },
-  { value: 'Other', label: 'Other' }
-]
+import {
+  getProvinces,
+  getCommunes,
+  getQuartiers,
+  addQuartier,
+  findOrCreateRue,
+  normalizeWhatsAppNumber,
+  validateWhatsAppNumber,
+  getProvinceById,
+  getCommuneById,
+  getQuartierById
+} from '../services/locationService'
+import LocationSection from './location/LocationSection'
+import { getAllCategoryConfigs } from '../data/categoryConfig'
 
 /**
  * ProfileModal — Single unified profile implementation.
@@ -37,8 +33,8 @@ const CATEGORIES = [
  * - Buyer sees: Personal Information + Contact
  * - Vendor sees: Personal Information + Contact + Location + Business + Social Media
  *
- * Reuses the backend from ProfileEditModal (listingService + userService).
- * Syncs location fields to the vendor document so the map reflects changes.
+ * Uses locationService for ID-based cascading selects (Province → Commune → Quartier → Rue)
+ * with Add Quartier and Rue auto-create, matching the AuthModal pattern.
  */
 export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onProfileUpdate }) {
   const { t } = useTranslation()
@@ -48,10 +44,12 @@ export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onP
     email: '',
     phoneNumber: '',
     whatsappNumber: '',
-    province: '',
-    commune: '',
-    quartier: '',
-    streetAddress: '',
+    provinceId: '',
+    communeId: '',
+    quartierId: '',
+    rueName: '',
+    latitude: 0,
+    longitude: 0,
     businessName: '',
     category: '',
     businessDescription: '',
@@ -69,26 +67,80 @@ export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onP
   // Photo modal
   const [showPhotoModal, setShowPhotoModal] = useState(false)
 
-  // Location options
-  const provinceOptions = getProvinceOptions().map(p => ({ value: p, label: p }))
-  const communeOptions = formData.province ? getCommuneOptions(formData.province).map(c => ({ value: c, label: c })) : []
-  const quartierOptions = formData.commune ? getQuartierOptions(formData.commune).map(q => ({ value: q, label: q })) : []
+  // Add Quartier state
+  const [showAddQuartier, setShowAddQuartier] = useState(false)
+  const [newQuartierName, setNewQuartierName] = useState('')
+  const [addQuartierLoading, setAddQuartierLoading] = useState(false)
+
+  // Loading states for cascading selects
+  const [loadingCommunes, setLoadingCommunes] = useState(false)
+  const [loadingQuartiers, setLoadingQuartiers] = useState(false)
+
+  // Location options (ID-based)
+  const provinces = getProvinces().map(p => ({ value: p.id, label: p.name }))
+  const communes = formData.provinceId ? getCommunes(formData.provinceId).map(c => ({ value: c.id, label: c.name })) : []
+  const quartiers = formData.communeId ? getQuartiers(formData.communeId).map(q => ({ value: q.id, label: q.name })) : []
+
+  // Categories
+  const categories = getAllCategoryConfigs(true).map(c => ({ value: c.label, label: c.label }))
 
   // Determine if user is a vendor
   const isVendor = currentUser?.role === 'vendor' && vendor
 
+  // ─── Resolve vendor's string-based location to IDs on init ───
+  function resolveLocationToIds(v) {
+    if (!v) return { provinceId: '', communeId: '', quartierId: '', rueName: '' }
+    // If already have IDs, use them
+    if (v.provinceId) {
+      return {
+        provinceId: v.provinceId || '',
+        communeId: v.communeId || '',
+        quartierId: v.quartierId || '',
+        rueName: v.rue || v.street || ''
+      }
+    }
+    // Fallback: resolve string names to IDs
+    const provincesList = getProvinces()
+    const province = provincesList.find(p => p.name === v.province)
+    const provinceId = province?.id || ''
+    let communeId = ''
+    let quartierId = ''
+    if (provinceId && v.commune) {
+      const communesList = getCommunes(provinceId)
+      const commune = communesList.find(c => c.name === v.commune)
+      communeId = commune?.id || ''
+      if (communeId && v.quartier) {
+        const quartiersList = getQuartiers(communeId)
+        const quartier = quartiersList.find(q => q.name === v.quartier)
+        quartierId = quartier?.id || ''
+      }
+    }
+    return {
+      provinceId,
+      communeId,
+      quartierId,
+      rueName: v.rue || v.street || ''
+    }
+  }
+
   // ─── Init form from user/vendor data ───
   useEffect(() => {
     if (isOpen) {
+      const resolved = resolveLocationToIds(vendor)
+      // Extract existing coords from vendor
+      const existingLat = vendor?.latitude || (vendor?.coords ? vendor.coords[0] : 0)
+      const existingLng = vendor?.longitude || (vendor?.coords ? vendor.coords[1] : 0)
       setFormData({
         fullName: currentUser?.fullName || '',
         email: currentUser?.email || '',
         phoneNumber: currentUser?.phone || '',
         whatsappNumber: vendor?.whatsappNumber || currentUser?.phone || '',
-        province: vendor?.province || '',
-        commune: vendor?.commune || '',
-        quartier: vendor?.quartier || '',
-        streetAddress: vendor?.rue || vendor?.street || '',
+        provinceId: resolved.provinceId,
+        communeId: resolved.communeId,
+        quartierId: resolved.quartierId,
+        rueName: resolved.rueName,
+        latitude: existingLat || 0,
+        longitude: existingLng || 0,
         businessName: vendor?.name || '',
         category: vendor?.category || '',
         businessDescription: vendor?.description || '',
@@ -101,8 +153,27 @@ export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onP
       })
       setErrors({})
       setToast(null)
+      setShowAddQuartier(false)
+      setNewQuartierName('')
     }
   }, [vendor, currentUser, isOpen])
+
+  // ─── Simulate loading states for cascading selects ───
+  useEffect(() => {
+    if (formData.provinceId) {
+      setLoadingCommunes(true)
+      const timer = setTimeout(() => setLoadingCommunes(false), 150)
+      return () => clearTimeout(timer)
+    }
+  }, [formData.provinceId])
+
+  useEffect(() => {
+    if (formData.communeId) {
+      setLoadingQuartiers(true)
+      const timer = setTimeout(() => setLoadingQuartiers(false), 150)
+      return () => clearTimeout(timer)
+    }
+  }, [formData.communeId])
 
   // ─── Toast helper ───
   const showToast = useCallback((type, message) => {
@@ -116,11 +187,28 @@ export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onP
     setFormData(prev => {
       const next = { ...prev, [name]: value }
       // Reset downstream location fields when parent changes
-      if (name === 'province') { next.commune = ''; next.quartier = '' }
-      if (name === 'commune') { next.quartier = '' }
+      if (name === 'provinceId') { next.communeId = ''; next.quartierId = '' }
+      if (name === 'communeId') { next.quartierId = '' }
       return next
     })
     if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }))
+  }
+
+  // ─── Add Quartier handler ───
+  function handleAddQuartier() {
+    if (!newQuartierName.trim()) return
+    setAddQuartierLoading(true)
+    try {
+      const result = addQuartier(formData.communeId, newQuartierName.trim())
+      setFormData(prev => ({ ...prev, quartierId: result.id }))
+      setShowAddQuartier(false)
+      setNewQuartierName('')
+      showToast('success', t('auth.quartierAdded', { name: result.name }))
+    } catch (err) {
+      setErrors(prev => ({ ...prev, quartierId: err.message }))
+    } finally {
+      setAddQuartierLoading(false)
+    }
   }
 
   // ─── Validation ───
@@ -129,12 +217,19 @@ export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onP
     if (!validateRequired(formData.fullName)) newErrors.fullName = t('profileModal.fullNameRequired')
     if (!validateEmail(formData.email)) newErrors.email = t('profileModal.emailInvalid')
     if (formData.phoneNumber && !validatePhone(formData.phoneNumber)) newErrors.phoneNumber = t('profileModal.phoneInvalid')
-    if (formData.whatsappNumber && !validatePhone(formData.whatsappNumber)) newErrors.whatsappNumber = t('profileModal.phoneInvalid')
+    if (formData.whatsappNumber && !validateWhatsAppNumber(formData.whatsappNumber)) newErrors.whatsappNumber = t('auth.whatsappInvalid')
 
     if (isVendor) {
       if (!validateRequired(formData.businessName)) newErrors.businessName = t('profileModal.businessRequired')
-      if (!validateRequired(formData.province)) newErrors.province = t('profileModal.provinceRequired')
-      if (!validateRequired(formData.commune)) newErrors.commune = t('profileModal.communeRequired')
+      if (!validateRequired(formData.provinceId)) newErrors.provinceId = t('profileModal.provinceRequired')
+      if (!validateRequired(formData.communeId)) newErrors.communeId = t('profileModal.communeRequired')
+      if (formData.whatsappNumber && !validateWhatsAppNumber(formData.whatsappNumber)) newErrors.whatsappNumber = t('auth.whatsappInvalid')
+      // Validate coordinates
+      const lat = parseFloat(formData.latitude)
+      const lng = parseFloat(formData.longitude)
+      if (!lat || !lng || isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) {
+        newErrors.coords = t('auth.selectLocation', 'Please select your exact business location on the map.')
+      }
     }
 
     // Social URLs — only validate if provided
@@ -149,24 +244,57 @@ export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onP
     return Object.keys(newErrors).length === 0
   }
 
-  // ─── Submit handler — matches ProfileEditModal backend ───
+  // ─── Submit handler ───
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!validate()) return
 
     setIsSubmitting(true)
     try {
-      // Build updated vendor object
+      // Handle Rue: check if exists, create if not
+      let rueId = vendor?.rueId || ''
+      if (isVendor && formData.quartierId && formData.rueName.trim()) {
+        const rueResult = findOrCreateRue(formData.quartierId, formData.rueName.trim())
+        rueId = rueResult.id
+      }
+
+      // Normalize WhatsApp
+      let normalizedWhatsApp = vendor?.whatsappNumber || ''
+      if (formData.whatsappNumber) {
+        normalizedWhatsApp = normalizeWhatsAppNumber(formData.whatsappNumber) || formData.whatsappNumber
+      }
+
+      // Resolve location names from IDs
+      const provinceName = formData.provinceId ? (getProvinceById(formData.provinceId)?.name || '') : ''
+      const communeName = formData.communeId ? (getCommuneById(formData.communeId)?.name || '') : ''
+      const quartierName = formData.quartierId ? (getQuartierById(formData.quartierId)?.name || '') : ''
+
+      // Extract and normalize coordinates
+      const newLat = parseFloat(formData.latitude) || vendor?.latitude || (vendor?.coords ? vendor.coords[0] : 0)
+      const newLng = parseFloat(formData.longitude) || vendor?.longitude || (vendor?.coords ? vendor.coords[1] : 0)
+      const coordsChanged = vendor && (
+        parseFloat(vendor.latitude || (vendor.coords ? vendor.coords[0] : 0)) !== newLat ||
+        parseFloat(vendor.longitude || (vendor.coords ? vendor.coords[1] : 0)) !== newLng
+      )
+
+      // Build updated vendor object — include coordinates for real-time marker relocation
       const updatedVendor = vendor ? {
         ...vendor,
         name: formData.businessName || vendor.name,
         category: formData.category || vendor.category,
-        province: formData.province || vendor.province,
-        commune: formData.commune || vendor.commune,
-        quartier: formData.quartier || vendor.quartier,
-        rue: formData.streetAddress || vendor.rue,
+        province: provinceName || vendor.province,
+        commune: communeName || vendor.commune,
+        quartier: quartierName || vendor.quartier,
+        rue: formData.rueName || vendor.rue,
+        provinceId: formData.provinceId || vendor.provinceId,
+        communeId: formData.communeId || vendor.communeId,
+        quartierId: formData.quartierId || vendor.quartierId,
+        rueId: rueId || vendor.rueId,
+        latitude: newLat,
+        longitude: newLng,
+        coords: [newLat, newLng],
         description: formData.businessDescription || vendor.description,
-        whatsappNumber: formData.whatsappNumber || vendor.whatsappNumber,
+        whatsappNumber: normalizedWhatsApp,
         socialMediaLinks: {
           ...vendor.socialMediaLinks,
           facebook: formData.facebook,
@@ -178,11 +306,6 @@ export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onP
         }
       } : null
 
-      // Assign locationId so map can find this vendor
-      if (updatedVendor) {
-        assignLocationId(updatedVendor)
-      }
-
       // Build updated user object
       const updatedUser = {
         ...currentUser,
@@ -191,19 +314,24 @@ export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onP
         phone: formData.phoneNumber
       }
 
-      // Save via existing services (same as ProfileEditModal)
+      // Save via existing services
       if (updatedVendor && isVendor) {
         listingService.updateVendorProfile(vendor.id, updatedVendor)
       }
       const savedUser = userService.updateUser(currentUser.id, updatedUser) || updatedUser
       userService.setCurrentUser(savedUser)
 
-      // Notify parent
+      // Notify parent — triggers MapView marker rebuild for instant relocation
       if (onProfileUpdate) {
         onProfileUpdate(updatedVendor, savedUser)
       }
 
-      showToast('success', t('profileModal.success'))
+      // Show appropriate success toast
+      if (coordsChanged) {
+        showToast('success', '📍 ' + t('profileModal.locationUpdated', 'Business location updated successfully'))
+      } else {
+        showToast('success', t('profileModal.success'))
+      }
       setTimeout(() => onClose(), 800)
     } catch (error) {
       console.error('Error saving profile:', error)
@@ -324,14 +452,17 @@ export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onP
                   name="whatsappNumber"
                   type="tel"
                   value={formData.whatsappNumber}
-                  onChange={handleChange}
+                  onChange={(e) => {
+                    const cleaned = e.target.value.replace(/[\s\-]/g, '')
+                    handleChange({ target: { name: 'whatsappNumber', value: cleaned } })
+                  }}
                   error={errors.whatsappNumber}
                   placeholder="+243 81 234 5678"
                 />
               </div>
             </section>
 
-            {/* Location (vendor only) */}
+            {/* Location (vendor only) — Precise Location Selection with Map */}
             {isVendor && (
               <section className="profile-modal-section">
                 <h3 className="profile-modal-section-title">
@@ -341,40 +472,33 @@ export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onP
                 <p className="profile-modal-section-desc">
                   {t('profileModal.locationDesc')}
                 </p>
-                <div className="profile-modal-grid">
-                  <Select
-                    label={t('profileModal.provinceLabel')}
-                    name="province"
-                    value={formData.province}
-                    onChange={handleChange}
-                    options={provinceOptions}
-                    error={errors.province}
-                    required
-                  />
-                  <Select
-                    label={t('profileModal.communeLabel')}
-                    name="commune"
-                    value={formData.commune}
-                    onChange={handleChange}
-                    options={communeOptions}
-                    error={errors.commune}
-                    required
-                  />
-                  <Select
-                    label={t('profileModal.quartierLabel')}
-                    name="quartier"
-                    value={formData.quartier}
-                    onChange={handleChange}
-                    options={quartierOptions}
-                  />
-                  <Input
-                    label={t('profileModal.streetLabel')}
-                    name="streetAddress"
-                    value={formData.streetAddress}
-                    onChange={handleChange}
-                    placeholder="Avenue, number..."
-                  />
-                </div>
+                <LocationSection
+                  provinceId={formData.provinceId}
+                  communeId={formData.communeId}
+                  quartierId={formData.quartierId}
+                  rueName={formData.rueName}
+                  latitude={formData.latitude}
+                  longitude={formData.longitude}
+                  errors={errors}
+                  onChange={(field, value) => {
+                    setFormData(prev => {
+                      const next = { ...prev, [field]: value }
+                      if (field === 'provinceId') { next.communeId = ''; next.quartierId = '' }
+                      if (field === 'communeId') { next.quartierId = '' }
+                      return next
+                    })
+                    if (errors[field]) setErrors(prev => ({ ...prev, [field]: '' }))
+                  }}
+                  onCoordsChange={(lat, lng, source) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      latitude: parseFloat(Number(lat).toFixed(6)),
+                      longitude: parseFloat(Number(lng).toFixed(6))
+                    }))
+                  }}
+                  showMap={true}
+                  readOnly={false}
+                />
               </section>
             )}
 
@@ -399,7 +523,7 @@ export default function ProfileModal({ isOpen, onClose, vendor, currentUser, onP
                     name="category"
                     value={formData.category}
                     onChange={handleChange}
-                    options={CATEGORIES}
+                    options={categories}
                     error={errors.category}
                   />
                 </div>

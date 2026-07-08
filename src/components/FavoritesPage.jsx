@@ -62,9 +62,10 @@ export default function FavoritesPage({
   }
 
   const getVendorImage = (vendor) => {
-    const productImage = vendor.products?.find(p => p.image)?.image
+    const productImage = vendor.products?.find(p => p.coverImage || p.images?.[0] || p.image)
+    const productSrc = productImage ? (productImage.coverImage || productImage.images?.[0] || productImage.image) : null
     if (vendor.profileImage) return vendor.profileImage
-    if (productImage) return productImage
+    if (productSrc) return productSrc
     return null
   }
 

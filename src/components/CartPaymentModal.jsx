@@ -1,8 +1,10 @@
-import React, { useState, useMemo, useRef } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { ShoppingCart, CreditCard, Smartphone, Landmark, CheckCircle, ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react'
+import React, { useState, useMemo } from 'react'
+import { motion } from 'framer-motion'
+import { ShoppingCart, CreditCard, Smartphone, Landmark, CheckCircle, ArrowLeft } from 'lucide-react'
 import { useTranslation } from '../i18n/I18nProvider'
 import { processMobileMoneyPayment, processBankTransferPayment, BANK_ACCOUNTS } from '../services/paymentService'
+import { validateDRCPhone } from '../utils/phoneUtils'
+import PhoneInput from './ui/PhoneInput'
 
 /* ──────────────────────────────────────
    Helpers
@@ -75,6 +77,8 @@ export default function CartPaymentModal({
   const [paymentMethod, setPaymentMethod] = useState(null)  // cash | mobile_money | bank_transfer
   const [mobileProvider, setMobileProvider] = useState(null)
   const [phoneNumber, setPhoneNumber] = useState('+243')
+  const [phoneError, setPhoneError] = useState(null)
+  const [phoneTouched, setPhoneTouched] = useState(false)
   const [selectedBank, setSelectedBank] = useState('RAWBANK')
   const [transferConfirmed, setTransferConfirmed] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -82,7 +86,6 @@ export default function CartPaymentModal({
   const [orderResult, setOrderResult] = useState(null)
   const [error, setError] = useState(null)
   const [expandedSection, setExpandedSection] = useState(null)
-  const phoneRef = useRef(null)
 
   /* ─── Bank accounts list ─── */
   const bankAccounts = useMemo(() => Object.entries(BANK_ACCOUNTS), [])
@@ -442,23 +445,25 @@ export default function CartPaymentModal({
                 </div>
 
                 <div className="cp-form-section">
-                  <label className="cp-form-label">{t('payment.phoneNumber', 'Phone Number')}</label>
-                  <div className="cp-phone-input-wrapper">
-                    <span className="cp-phone-prefix">{t('payment.phonePrefix', '+243')}</span>
-                    <input
-                      ref={phoneRef}
-                      type="tel"
-                      className="cp-phone-input"
-                      value={phoneNumber.replace('+243', '')}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, '')
-                        setPhoneNumber(`+243${val}`)
-                      }}
-                      placeholder="  XXX XXX XXX"
-                      maxLength={9}
-                    />
-                  </div>
-                  <p className="cp-form-hint">{t('payment.phoneHint', 'Enter your mobile money phone number')}</p>
+                  <PhoneInput
+                    value={phoneNumber}
+                    onChange={(val) => {
+                      setPhoneNumber(val)
+                      if (phoneError) setPhoneError(null)
+                    }}
+                    onBlur={(val) => {
+                      setPhoneTouched(true)
+                      const sub = val.replace('+243', '')
+                      if (sub.replace(/\D/g, '').length > 0) {
+                        const result = validateDRCPhone(val)
+                        setPhoneError(result.error)
+                      }
+                    }}
+                    error={phoneError}
+                    helperText={t('payment.phoneHint', 'Example: +243 985 253 499 or 0985 253 499')}
+                    required
+                    style={{ marginBottom: 0 }}
+                  />
                 </div>
               </motion.div>
             )}

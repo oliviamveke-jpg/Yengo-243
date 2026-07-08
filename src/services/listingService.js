@@ -34,7 +34,7 @@ const normalizeVendorProducts = (vendor, product) => ({
   title: product.title,
   price: product.price,
   category: product.category,
-  image: product.image,
+  image: product.coverImage || product.images?.[0] || product.image || null,
   active: product.active
 })
 
@@ -106,6 +106,7 @@ export const listingService = {
   addListing(vendorId, listing) {
     const normalizedListing = {
       ...listing,
+      coverImage: listing.coverImage || listing.images?.[0] || listing.image || null,
       id: listing.id || Date.now(),
       createdAt: listing.createdAt || new Date().toISOString(),
       updatedAt: listing.updatedAt || new Date().toISOString()
@@ -131,9 +132,16 @@ export const listingService = {
       return null
     }
 
+    // Auto-set coverImage when images change but coverImage isn't explicitly provided
+    const mergedImages = updates.images !== undefined ? updates.images : listings[index].images
+    const autoCoverImage = updates.coverImage !== undefined
+      ? updates.coverImage
+      : (mergedImages?.[0] || listings[index].coverImage || listings[index].image || null)
+
     const updatedListing = {
       ...listings[index],
       ...updates,
+      coverImage: autoCoverImage,
       updatedAt: new Date().toISOString()
     }
     listings[index] = updatedListing
@@ -192,5 +200,72 @@ export const listingService = {
     bucket[vendorId] = analytics
     storageAdapter.write(STORAGE_KEYS.vendorAnalytics, bucket)
     return analytics
+  },
+
+  /**
+   * Delete all listings (products) for a vendor. Used during account deletion.
+   */
+  deleteAllListings(vendorId) {
+    if (!vendorId) return false
+
+    // Remove from vendorListings bucket
+    const bucket = storageAdapter.read(STORAGE_KEYS.vendorListings, {}) || {}
+    delete bucket[vendorId]
+    storageAdapter.write(STORAGE_KEYS.vendorListings, bucket)
+
+    return true
+  },
+
+  /**
+   * Delete analytics data for a vendor. Used during account deletion.
+   */
+  deleteAnalytics(vendorId) {
+    if (!vendorId) return false
+
+    const bucket = storageAdapter.read(STORAGE_KEYS.vendorAnalytics, {}) || {}
+    delete bucket[vendorId]
+    storageAdapter.write(STORAGE_KEYS.vendorAnalytics, bucket)
+
+    return true
+  },
+
+  /**
+   * Delete the vendor profile. Used during account deletion.
+   */
+  deleteVendorProfile(vendorId) {
+    if (!vendorId) return false
+
+    const bucket = storageAdapter.read(STORAGE_KEYS.vendorProfile, {}) || {}
+    delete bucket[vendorId]
+    storageAdapter.write(STORAGE_KEYS.vendorProfile, bucket)
+
+    return true
+  },
+
+  /**
+   * Delete all settings for a vendor. Used during account deletion.
+   */
+  deleteVendorSettings(vendorId) {
+    if (!vendorId) return false
+
+    const bucket = storageAdapter.read(STORAGE_KEYS.vendorSettings, {}) || {}
+    delete bucket[vendorId]
+    storageAdapter.write(STORAGE_KEYS.vendorSettings, bucket)
+
+    return true
+  },
+
+  /**
+   * Delete a vendor record from the vendors array by ownerId or vendorId.
+   * Used during account deletion.
+   */
+  deleteVendorByOwnerId(ownerId) {
+    if (!ownerId) return false
+
+    const vendors = this.getVendors()
+    const filtered = vendors.filter(v => v.ownerId !== ownerId && v.id !== ownerId)
+    this.setVendors(filtered)
+
+    return true
   }
 }
