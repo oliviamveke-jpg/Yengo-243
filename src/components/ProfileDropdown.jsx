@@ -230,7 +230,6 @@ export default function ProfileDropdown({ user, onLogout, onNavigate, viewMode, 
       )}
     </div>
   );
-=======
       <AnimatePresence>
         {isOpen && (
           <motion.div
